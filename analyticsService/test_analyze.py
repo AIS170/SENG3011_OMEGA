@@ -1,10 +1,11 @@
 import requests
+import pandas as pd
+import json
 
 url = "http://127.0.0.1:5002/analyze"
 data = {
     "stock_name": "AAPL",
-    "stock_data": {
-        "data": [
+    "data": [
             {"Date": "2023-01-01", "Close": 145.32},
             {"Date": "2023-01-02", "Close": 146.50},
             {"Date": "2023-01-03", "Close": 147.20},
@@ -16,14 +17,21 @@ data = {
             {"Date": "2023-01-09", "Close": 149.20},
             {"Date": "2023-01-10", "Close": 150.30}
         ]
-    },
-    "callback_url": "http://127.0.0.1:5003/receive-data",
+    ,
     "years": 5,
     "forecast_days": 30,
     "sell_threshold": 0.02,
     "buy_threshold": -0.02,
-    "user_name": "user1212"
+    "user_name": "man12"
 }
 
+
+
 response = requests.post(url, json=data)
-print(response.json())  # Should print the response from your Flask API
+
+data_dict = json.loads(response.json())
+
+# Convert dictionary to DataFrame
+df = pd.DataFrame.from_dict(data_dict)
+
+print(df)
