@@ -24,7 +24,7 @@ paths:
             format: date
       responses:
         '200':
-          description: Data successfully retrieved from s3
+          description: Data successfully retrieved; filename of the format <stockname>
           content:
             application/json:
               schema:
@@ -53,15 +53,75 @@ paths:
                   events:
                     type: string
         '400':
-          description: Bad Request - Invalid parameters.
+          description: Bad Request - Stockname must first be collected.
         '401':
-          description: Stock data not found
+          description: Username not found.
+        '500':
+          description: Internal server error.
+  /v1/retrieve/{username}/{datatype}/{stockname}/:
+    get:
+      summary: Retrieves data for a stock
+      description: Retrieves data for the pool of collected data
+      parameters:
+        - name: stockname
+          in: path
+          description: The stock's name
+          required: true
+          schema:
+            type: string
+        - name: datatype
+          in: path
+          description: The type of data you are looking to retrieve (new, finance)
+          required: true
+          schema:
+            type: string
+        - name: username
+          in: path
+          description: the user's username
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Data successfully retrieved; filename of the format <datatype>_<stockname>
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data_source:
+                    type: string
+                    example: "yahoo_finance"
+                  dataset_type:
+                    type: string
+                    example: "Daily stock data"
+                  dataset_id:
+                    type: string
+                  time_object:
+                    type: object
+                    properties:
+                      timestamp:
+                        type: string
+                        format: date-time
+                        example: "2025-03-21T12:34:56"
+                      timezone:
+                        type: string
+                        example: "GMT+11"
+                  stock_name:
+                    type: string
+                  events:
+                    type: string
+        '400':
+          description: Invalid input - Either stockname is not previously collected or the datatype is invalid.
+        '401':
+          description: Username not found.
         '500':
           description: Internal server error.
   /v1/list/{username}/:
     get:
       summary: Lists all user's stocks
-      description: Lists all stocks user has collected data on
+      description: Lists all stocks user has retrieved data
       parameters:
         - name: username
           in: path
@@ -72,21 +132,21 @@ paths:
             format: date
       responses:
         '200':
-          description: User stocks successfully listed out
+          description: User stocks successfully listed out.
           content:
             application/json:
               schema:
                 type: array
                 items:
                   type: string
-                  example: "AAPL"
+                  example: "apple"
         '401':
-          description: User not found
+          description: User not found.
         '500':
           description: Internal server error.
   /v1/delete/{username}/{filename}:
     delete:
-      summary: "Delete a file from DynamoDB"
+      summary: "Delete a file from user's retrieved files"
       description: "This endpoint deletes a specified file for the given username from the DynamoDB table."
       parameters:
         - name: "filename"
@@ -103,9 +163,11 @@ paths:
           description: "The user's username"
       responses:
         '200':
-          description: File deleted successfully
+          description: File deleted successfully.
+        '400':
+          description: File unable to be found - file must be retrieved before it can be deleted.
         '401':
-          description: User not found
+          description: User not found.
         '500':
           description: Internal server error.
   /stockInfo:
