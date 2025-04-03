@@ -1,0 +1,53 @@
+{
+    "family": "retrieval-microservice-task-def",
+    "containerDefinitions": [
+        {
+            "name": "retrieval-container",
+            "image": "339712883212.dkr.ecr.ap-southeast-2.amazonaws.com/seng3011-omega-microservice-repo:latest",
+            "cpu": 256,
+            "memory": 1024,
+            "portMappings": [
+                {
+                    "name": "retrieval-container-5001-tcp",
+                    "containerPort": 5001,
+                    "hostPort": 5001,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }
+            ],
+            "essential": true,
+            "environment": [],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/",
+                    "mode": "non-blocking",
+                    "awslogs-create-group": "true",
+                    "max-buffer-size": "25m",
+                    "awslogs-region": "ap-southeast-2",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            },
+            "systemControls": []
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::339712883212:role/seng3011-microservice-role",
+    "executionRoleArn": "arn:aws:iam::339712883212:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "volumes": [],
+    "placementConstraints": [],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "256",
+    "memory": "1024",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    }
+}

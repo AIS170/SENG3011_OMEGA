@@ -11,6 +11,8 @@ on:
 
 permissions:
   contents: read
+  checks: write
+  pull-requests: write
 
 jobs:
   build:
@@ -28,10 +30,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Start server
-      run: python3 app.py &
-    - name: Wait for server to start
-      run: sleep 10
+    - name: Set ENVIRONMENT variable
+      run: echo "ENVIRONMENT=testing" >> $GITHUB_ENV
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -40,5 +40,61 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Run tests with coverage
       run: |
-        coverage run --source . --omit=app.py -m pytest
+        coverage run --source . --omit=src/app.py -m pytest --junitxml=test-results.xml
         coverage report -m --fail-under=85
+        coverage xml -o coverage.xml
+        coverage html -d coverage_html_report
+    - name: Install JUnit2HTML
+      run: pip install junit2html
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: pytest-report
+        path: test-results.xml
+    - name: Coverage XML Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-file-xml
+        path: coverage.xml
+    - name: Coverage HTML Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-file-html
+        path: coverage_html_report/
+    - name: Publish
+      uses: dorny/test-reporter@v1
+      with:
+        name: Pytest Results
+        path: test-results.xml
+        reporter: java-junit
+    - name: Coverage Summary
+      uses: irongut/CodeCoverageSummary@v1.3.0
+      with:
+        filename: coverage.xml
+        badge: true
+        fail_below_min: false
+        format: markdown
+        hide_complexity: true
+        indicators: true
+        output: both
+    - name: Install tools for PDF generation
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pandoc wkhtmltopdf
+    - name: Generate Test Report PDF
+      run: |
+        junit2html test-results.xml test-report.html
+        wkhtmltopdf test-report.html test-report.pdf
+    - name: Generate PDF coverage summary
+      run: |
+        echo "# Coverage Report" > coverage-summary.md
+        echo "" >> coverage-summary.md
+        echo '```' >> coverage-summary.md
+        coverage report -m >> coverage-summary.md
+        echo '```' >> coverage-summary.md
+        pandoc coverage-summary.md -o coverage-summary.pdf --pdf-engine=wkhtmltopdf
+    - name: Upload Test Summary PDF
+      uses: actions/upload-artifact@v4
+      with:
+        name: junit-test-report
+        path: test-report.pdf

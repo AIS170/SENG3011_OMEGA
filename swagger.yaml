@@ -1,0 +1,477 @@
+openapi: 3.0.0
+info:
+  title: Stock Trading API
+  description: API for fetching stock data, analyzing it with AWS Sage, and storing/retrieving results.
+  version: 1.0.0
+paths:
+  /v1/retrieve/{username}/{stockname}:
+    get:
+      summary: Retrieves data for a stock
+      description: Retrieves data for a stock from S3 bucket
+      parameters:
+        - name: stockname
+          in: path
+          description: The stock's name
+          required: true
+          schema:
+            type: string
+        - name: username
+          in: path
+          description: the user's username
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Data successfully retrieved from s3
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data_source:
+                    type: string
+                    example: "yahoo_finance"
+                  dataset_type:
+                    type: string
+                    example: "Daily stock data"
+                  dataset_id:
+                    type: string
+                  time_object:
+                    type: object
+                    properties:
+                      timestamp:
+                        type: string
+                        format: date-time
+                        example: "2025-03-21T12:34:56"
+                      timezone:
+                        type: string
+                        example: "GMT+11"
+                  stock_name:
+                    type: string
+                  events:
+                    type: string
+        '400':
+          description: Bad Request - Invalid parameters.
+        '401':
+          description: Stock data not found
+        '500':
+          description: Internal server error.
+  /v1/list/{username}/:
+    get:
+      summary: Lists all user's stocks
+      description: Lists all stocks user has collected data on
+      parameters:
+        - name: username
+          in: path
+          description: the user's username
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: User stocks successfully listed out
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  example: "AAPL"
+        '401':
+          description: User not found
+        '500':
+          description: Internal server error.
+  /v1/delete/{username}/{filename}:
+    delete:
+      summary: "Delete a file from DynamoDB"
+      description: "This endpoint deletes a specified file for the given username from the DynamoDB table."
+      parameters:
+        - name: "filename"
+          in: "path"
+          required: true
+          schema:
+            type: string
+          description: Name of file to be deleted
+        - name: "username"
+          in: "path"
+          required: true
+          schema:
+            type: string
+          description: "The user's username"
+      responses:
+        '200':
+          description: File deleted successfully
+        '401':
+          description: User not found
+        '500':
+          description: Internal server error.
+  /stockInfo:
+    get:
+      summary: Retrieve stock information
+      description: Retrieves stock data for a given company
+      parameters:
+        - name: "company"
+          in: "query"
+          required: true
+          schema:
+            type: string
+          description: "The name of the company whose stock information is to be retrieved."
+          example: "Apple"
+      responses:
+        200:
+          description: "Stock data retrieved"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Stock data retrieved successfully"
+                  ticker:
+                    type: string
+                    example: "AAPL"
+                  file:
+                    type: string
+                  data:
+                    type: object
+                    additionalProperties: true
+        400:
+          description: "Invalid input"
+        401:
+          description: "Could not find stock ticker"
+        404:
+          description: "Stock data not found"
+        500:
+          description: Internal server error.
+  /check_stock:
+    get:
+      summary: "Check if stock data exists for a given company"
+      description: "Check if stock data exists for a given company"
+      parameters:
+        - name: "company"
+          in: "query"
+          required: true
+          schema:
+            type: string
+          description: "The name of the company to check stock data for."
+          example: "Apple"
+        - name: "username"
+          in: "query"
+          required: true
+          schema:
+            type: string
+          description: "The user's username"
+      responses:
+        200:
+          description: "Stock existence checked successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Stock data for JohnDoe for 'apple' exists in S3."
+                  file:
+                    type: string
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /analyze:
+    post:
+      summary: "Analyse stock data"
+      description: "Analyses stock data using Prophet to generates forecasts, buy or sell recommendations and rolling max/min values."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stock_name:
+                  type: string
+                  description: "Stock name"
+                data:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      Date:
+                        type: string
+                        format: date
+                        description: "date of the data entry."
+                      Close:
+                        type: number
+                        format: float
+                        description: "Closing price of the stock"
+                years:
+                  type: integer
+                  description: "number of years of data to be used in analysis"
+                forecast_days:
+                  type: integer
+                  description: "number of days to forecast"
+                sell_threshold:
+                  type: number
+                  format: float
+                  description: "threshold for sell signal"
+                buy_threshold:
+                  type: number
+                  format: float
+                  description: "threshold for buy signal"
+                user_name:
+                  type: string
+                  description: "user's username'"
+      responses:
+        200:
+          description: "Stock data successfully analysed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    ds:
+                      type: string
+                      format: date
+                      description: "date of the forecasted stock price."
+                    yhat:
+                      type: number
+                      format: float
+                      description: "forecasted stock price."
+                    yhat_lower:
+                      type: number
+                      format: float
+                      description: "lower bound of the forecasted stock price."
+                    yhat_upper:
+                      type: number
+                      format: float
+                      description: "upper bound of the forecasted stock price."
+                    Rolling_Max:
+                      type: number
+                      format: float
+                      description: "rolling maximum forecasted stock price"
+                    Rolling_Min:
+                      type: number
+                      format: float
+                      description: "rolling minimum forecasted stock price"
+                    Sell_Signal:
+                      type: boolean
+                      description: "Whether should sell"
+                    Buy_Signal:
+                      type: boolean
+                      description: "Whether should buy"
+                    Price_Change:
+                      type: number
+                      format: float
+                      description: "Change in stock price from previous forecast."
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /retrieve_analysis:
+    post:
+      summary: "Retrieve stock analysis"
+      description: Retrieve stock analysis from DynamoDB
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_name:
+                  type: string
+                  description: "The user's username"
+                stock_name:
+                  type: string
+                  description: "The name of the stock"
+      responses:
+        200:
+          description: "Stock analysis data retrieved successfully."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    user_name:
+                      type: "string"
+                      description: "The user's username"
+                    stock_symbol:
+                      type: "string"
+                      description: "Stock symbol"
+                    ds:
+                      type: string
+                      format: date
+                      description: "date of the forecasted stock price."
+                    yhat:
+                      type: number
+                      format: float
+                      description: "forecasted stock price."
+                    yhat_lower:
+                      type: number
+                      format: float
+                      description: "lower bound of the forecasted stock price."
+                    yhat_upper:
+                      type: number
+                      format: float
+                      description: "upper bound of the forecasted stock price."
+                    Rolling_Max:
+                      type: number
+                      format: float
+                      description: "rolling maximum forecasted stock price"
+                    Rolling_Min:
+                      type: number
+                      format: float
+                      description: "rolling minimum forecasted stock price"
+                    Sell_Signal:
+                      type: boolean
+                      description: "Whether should sell"
+                    Buy_Signal:
+                      type: boolean
+                      description: "Whether should buy"
+                    Price_Change:
+                      type: number
+                      format: float
+                      description: "Change in stock price from previous forecast."
+        400:
+          description: "Invalid input"
+        404:
+          description: "No data found for the given user and stock"
+        500:
+          description: "Internal server error"
+  /signup:
+    post:
+      summary: "Registers a user using AWS Cognito"
+      description: "Registers a user using AWS Cognito"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: "The user's username"
+                email:
+                  type: string
+                  format: email
+                  description: "The user's email"
+                password:
+                  type: string
+                  description: "The user's password"
+                name:
+                  type: string
+                  description: "The user's full name"
+      responses:
+        200:
+          description: "User successfully sregistered"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_sub:
+                    type: string
+                    description: "User identifier"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /confirm_signup:
+    post:
+      summary: "Confirm signup"
+      description: "Confirms signup with confirmation code in mail"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: "The user's username"
+                conf_code:
+                  type: string
+                  description: "The confirmation code"
+      responses:
+        200:
+          description: "Signup confirmed."
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /login:
+    post:
+      summary: "Login"
+      description: "Allows a user to log in"
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: "The user's username"
+                password:
+                  type: string
+                  description: "The user's password"
+      responses:
+        200:
+          description: "User successfully logged in."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: "Access token"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /logout:
+    post:
+      summary: "User Logout"
+      description: "Logs a user out"
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                AccessToken:
+                  type: string
+                  description: "The user's access token"
+      responses:
+        200:
+          description: "User logged out."
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+components:
+  securitySchemes:
+    JWTAuth:
+      type: http
+      scheme: bearer

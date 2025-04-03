@@ -14,13 +14,13 @@ class TestRetrieveRoute:
         username = "user1"
 
         # pull for the first time - need to look at s3
-        res = client.get(f"/v1/retrieve/{username}/{stockName}/")
+        res = client.get(f"/v2/retrieve/{username}/finance/{stockName}/")
 
         assert res.status_code == 200
         assert json.loads(res.data)["stock_name"] == stockName
 
         # pull again - no need to look at s3 this time
-        res = client.get(f"/v1/retrieve/{username}/{stockName}/")
+        res = client.get(f"/v2/retrieve/{username}/finance/{stockName}/")
         assert res.status_code == 200
         assert json.loads(res.data)["stock_name"] == stockName
 
@@ -28,15 +28,24 @@ class TestRetrieveRoute:
     def test_uncollected_stock(self, rootdir, client, s3_mock, test_table):
         username = "user1"
 
-        res = client.get(f"/v1/retrieve/{username}/fakestock/")
+        res = client.get(f"/v2/retrieve/{username}/finance/fakestock/")
         pprint(res.data)
         assert res.status_code == 400
         assert json.loads(res.data)["StockNotFound"] is not None
 
     @mock_aws
+    def test_invalid_data_type(self, rootdir, client, s3_mock, test_table):
+        stockName = "apple"
+        username = "user1"
+
+        res = client.get(f"/v2/retrieve/{username}/fake_data_type/{stockName}/")
+        assert res.status_code == 400
+        assert json.loads(res.data)["InvalidDataKey"] is not None
+
+    @mock_aws
     def test_invalid_username(self, rootdir, client, s3_mock, test_table):
         stockName = "apple"
 
-        res = client.get(f"/v1/retrieve/fakeUser/{stockName}/")
+        res = client.get(f"/v2/retrieve/fakeUser/finance/{stockName}/")
         assert res.status_code == 401
         assert json.loads(res.data)["UserNotFound"] is not None

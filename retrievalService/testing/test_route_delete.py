@@ -13,11 +13,11 @@ class TestDeleteRoute:
         username = "user1"
 
         client.get(f"/v1/retrieve/{username}/{stockName}/")
-        res = client.delete("/v1/delete/", json={"username": username, "filename": stockName})
+        res = client.delete(f"/v1/delete/{username}/{stockName}/")
 
         assert res.status_code == 200
 
-        res = client.delete("/v1/delete/", json={"username": username, "filename": stockName})
+        res = client.delete(f"/v1/delete/{username}/{stockName}/")
         assert res.status_code == 400
         assert json.loads(res.data)["FileNotFound"] is not None
 
@@ -27,7 +27,7 @@ class TestDeleteRoute:
         username = "user1"
 
         client.get(f"/v1/retrieve/{username}/{stockName}/")
-        res = client.delete("/v1/delete/", json={"username": "wrong-user", "filename": stockName})
+        res = client.delete(f"/v1/delete/wrong-user/{stockName}/")
 
         assert res.status_code == 401
         assert json.loads(res.data)["UserNotFound"] is not None

@@ -20,7 +20,7 @@ class TestListRoute:
         assert res.status_code == 200
         assert len(json.loads(res.data)["Success"]) == 1
 
-        client.delete("/v1/delete/", json={"username": username, "filename": stockName})
+        client.delete(f"/v1/delete/{username}/{stockName}/")
 
         res = client.get(f"/v1/list/{username}/")
         assert res.status_code == 200

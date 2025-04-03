@@ -96,7 +96,6 @@ class RetrievalInterface:
             raise
 
     # Pushes a file and its content to dynamoDB
-    # Does NOT check if the file already exists in the user's allocated memory
     def pushToDynamo(self, fileName: str, fileContent: str, username: str, tableName: str):
         dynamodb = boto3.client("dynamodb", region_name="ap-southeast-2")
 
@@ -202,9 +201,7 @@ class RetrievalInterface:
             deserializer = TypeDeserializer()
             unmarshalledItem = {k: deserializer.deserialize(v) for k, v in response["Item"].items()}
 
-            return unmarshalledItem.get("retrievedFiles")
-
-            return [stock.get("stockName") for stock in unmarshalledItem.get("retrievedFiles")]
+            return [stock.get("filename") for stock in unmarshalledItem.get("retrievedFiles")]
 
         except Exception as e:
             sys.stderr.write(
@@ -213,8 +210,69 @@ class RetrievalInterface:
             )
             raise
 
+    def pushToDynamoV2(self, data_src: str, stockName: str, fileContent: str, username: str, tableName: str):
+        '''Redoing the push method to dynamodb to account for having different data types (finance and news at
+        the moment). The key difference will be the filename that is associated with a pushed file will include
+        the type of data. The format of the filename will be <data_type>_<stock_name>.'''
 
-# if __name__ == "__main__":
-#     DYNAMO_DB_NAME = "seng3011-test-dynamodb"
-#     ri = RetrievalInterface()
-#     ri.pushToDynamo()
+        dynamodb = boto3.client("dynamodb", region_name="ap-southeast-2")
+
+        reader = csv.DictReader(fileContent.split("\n"), delimiter=",")
+
+        contentList = []
+        for line in list(reader):
+            # if we have a blank line (especially at the end of a file)
+            if line == "":
+                continue
+            date = line.get("Date")
+            closeVal = line.get("Close")
+
+            contentList.append(
+                {
+                    "M": {
+                        "attribute": {"M": {"close": {"S": closeVal}, "stock_name": {"S": stockName}}},
+                        "event-type": {"S": "stock-ohlc"},
+                        "time_object": {
+                            "M": {
+                                "duration": {"S": "0"},
+                                "duration-unit": {"S": "days"},
+                                "time-stamp": {"S": date},
+                                "time-zone": {"S": "GMT+11"},
+                            }
+                        },
+                    }
+                }
+            )
+
+        fileName = f"{data_src}_{stockName}"
+
+        new_object = {
+            "stockName": {"S": stockName},
+            "content": {"L": contentList},
+            "filename": {"S": fileName},
+        }
+
+        try:
+            found, file, index = self.getFileFromDynamo(fileName, username, tableName)
+            if found:
+                raise UserHasFile("User already have a file with this name; refusing to push it again")
+
+            dynamodb.update_item(
+                TableName=tableName,
+                Key={"username": {"S": username}},
+                UpdateExpression="""SET retrievedFiles =
+                    list_append(if_not_exists(retrievedFiles, :empty_list), :new_values)""",
+                ExpressionAttributeValues={":new_values": {"L": [{"M": new_object}]}, ":empty_list": {"L": []}},
+                ReturnValues="UPDATED_NEW",
+            )
+
+            return True
+        except ClientError as e:
+            sys.stderr.write(
+                f"""(RetrievalInterface.pushToDynamo) Client (DynamoDB)
+                Error: {e.response['Error']['Code']}\n"""
+            )
+            raise
+        except Exception as e:
+            sys.stderr.write(f"(RetrievalInterface.pushToDynamo) General Exception {e}\n")
+            raise

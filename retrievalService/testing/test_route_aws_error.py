@@ -33,7 +33,7 @@ class TestInternalError:
         username = "user1"
         stockName = "apple"
 
-        res = client.delete("/v1/delete/", json={"username": username, "filename": stockName})
+        res = client.delete(f"/v1/delete/{username}/{stockName}/")
         print(json.loads(res.data))
         assert res.status_code == 500
 
@@ -47,3 +47,11 @@ class TestInternalError:
         print(json.loads(res.data))
         assert res.status_code == 500
         assert json.loads(res.data)["InternalError"] is not None
+    
+    @mock_aws
+    def test_broken_retrieveV2(self, client, s3_mock):
+        username = "user1"
+        res = client.get(f"/v2/retrieve/{username}/finance/apple/")
+        assert res.status_code == 500
+        assert json.loads(res.data)["InternalError"] is not None
+
