@@ -45,7 +45,7 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    - name: Run tests with coverage (retrievalService + DataCollection unit/component)
+    - name: Run tests with coverage (retrievalService + DataCollection)
       run: |
         coverage run --source . --omit=app.py -m pytest \
           retrievalService/testing \
@@ -53,9 +53,48 @@ jobs:
           dataCollection/Testing/ComponentTesting.py
         coverage report -m --fail-under=85
         coverage xml -o coverage.xml
+        coverage html -d coverage_html_report
+        pytest --junitxml=test-results.xml
 
     - name: Run contract (integration) tests (DataCollection)
       run: |
         python3 dataCollection/src/dataCol.py &
         sleep 5
         pytest dataCollection/Testing/ContractTesting.py -m integration --disable-warnings
+
+    - name: Install tools for PDF generation
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pandoc wkhtmltopdf
+
+    - name: Generate Test Report PDF
+      run: |
+        junit2html test-results.xml test-report.html
+        wkhtmltopdf test-report.html test-report.pdf
+
+    - name: Generate PDF coverage summary
+      run: |
+        echo "# Coverage Report" > coverage-summary.md
+        echo "" >> coverage-summary.md
+        echo '```' >> coverage-summary.md
+        coverage report -m >> coverage-summary.md
+        echo '```' >> coverage-summary.md
+        pandoc coverage-summary.md -o coverage-summary.pdf --pdf-engine=wkhtmltopdf
+
+    - name: Upload Test Summary PDF
+      uses: actions/upload-artifact@v4
+      with:
+        name: junit-test-report
+        path: test-report.pdf
+
+    - name: Upload Coverage Summary PDF
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-summary-pdf
+        path: coverage-summary.pdf
+
+    - name: Upload Coverage HTML Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-html
+        path: coverage_html_report/
