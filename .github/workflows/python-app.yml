@@ -8,9 +8,12 @@ on:
 
 permissions:
   contents: read
+  checks: write
+  pull-requests: write
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
 
     steps:
@@ -34,33 +37,69 @@ jobs:
         aws-secret-access-key: ${{ secrets.RAKSHIL_SECRET_ACCESS_KEY }}
         aws-region: ap-southeast-2
 
-    - name: Start server
-      run: python3 app.py &
-
-    - name: Wait for server to start
-      run: sleep 10
+    - name: Set ENVIRONMENT variable
+      run: echo "ENVIRONMENT=testing" >> $GITHUB_ENV
 
     - name: Lint with flake8
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    - name: Run tests with coverage (retrievalService + DataCollection)
+    - name: Run unit + component tests with coverage
       run: |
-        coverage run --source . --omit=app.py -m pytest \
-          retrievalService/testing \
+        coverage run --source . --omit=src/app.py -m pytest \
           dataCollection/Testing/unitTests.py \
-          dataCollection/Testing/ComponentTesting.py
+          dataCollection/Testing/ComponentTesting.py \
+          retrievalService/testing \
+          --junitxml=test-results.xml
         coverage report -m --fail-under=85
         coverage xml -o coverage.xml
         coverage html -d coverage_html_report
-        pytest --junitxml=test-results.xml
 
-    - name: Run contract (integration) tests (DataCollection)
+    - name: Run contract (integration) tests
       run: |
         python3 dataCollection/src/dataCol.py &
         sleep 5
         pytest dataCollection/Testing/ContractTesting.py -m integration --disable-warnings
+
+    - name: Install JUnit2HTML
+      run: pip install junit2html
+
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: pytest-report
+        path: test-results.xml
+
+    - name: Coverage XML Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-file-xml
+        path: coverage.xml
+
+    - name: Coverage HTML Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-file-html
+        path: coverage_html_report/
+
+    - name: Publish
+      uses: dorny/test-reporter@v1
+      with:
+        name: Pytest Results
+        path: test-results.xml
+        reporter: java-junit
+
+    - name: Coverage Summary
+      uses: irongut/CodeCoverageSummary@v1.3.0
+      with:
+        filename: coverage.xml
+        badge: true
+        fail_below_min: false
+        format: markdown
+        hide_complexity: true
+        indicators: true
+        output: both
 
     - name: Install tools for PDF generation
       run: |
@@ -86,15 +125,3 @@ jobs:
       with:
         name: junit-test-report
         path: test-report.pdf
-
-    - name: Upload Coverage Summary PDF
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-summary-pdf
-        path: coverage-summary.pdf
-
-    - name: Upload Coverage HTML Report
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-html
-        path: coverage_html_report/
