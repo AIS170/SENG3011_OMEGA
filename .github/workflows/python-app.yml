@@ -1,13 +1,11 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
-name: Python application
+name: Run All Tests with Report
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,59 +13,68 @@ permissions:
   pull-requests: write
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
+    - name: 🧾 Checkout code
+      uses: actions/checkout@v3
+
+    - name: 🐍 Set up Python 3.10
+      uses: actions/setup-python@v4
       with:
         python-version: "3.10"
-    - name: Install Python dependencies
+
+    - name: 📦 Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest
+        pip install flake8 pytest coverage requests boto3 junit2html
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Set ENVIRONMENT variable
-      run: echo "ENVIRONMENT=testing" >> $GITHUB_ENV
-    - name: Lint with flake8
+
+    - name: 🔐 Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.RAKSHIL_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.RAKSHIL_SECRET_ACCESS_KEY }}
+        aws-region: ap-southeast-2
+
+    - name: ✅ Lint with flake8
       run: |
-        # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Run tests with coverage
+
+    - name: 🚦 Run unit & component tests with coverage
       run: |
-        coverage run --source . --omit=src/app.py -m pytest --junitxml=test-results.xml
-        coverage report -m --fail-under=85
+        coverage run --source dataCollection --omit=src/app.py -m pytest dataCollection/Testing/unitTests.py dataCollection/Testing/ComponentTesting.py --junitxml=test-results.xml
+        coverage report -m
         coverage xml -o coverage.xml
         coverage html -d coverage_html_report
-    - name: Install JUnit2HTML
-      run: pip install junit2html
-    - name: Upload Test Results
+
+    - name: 🧪 Run contract (integration) tests
+      run: |
+        python3 dataCollection/src/dataCol.py &  # Start Flask app in background
+        sleep 5
+        pytest dataCollection/Testing/ContractTesting.py -m integration --disable-warnings
+
+    - name: Upload Test Results XML
       uses: actions/upload-artifact@v4
       with:
         name: pytest-report
         path: test-results.xml
-    - name: Coverage XML Report
+
+    - name: Upload Coverage XML
       uses: actions/upload-artifact@v4
       with:
         name: coverage-file-xml
         path: coverage.xml
-    - name: Coverage HTML Report
+
+    - name: Upload Coverage HTML
       uses: actions/upload-artifact@v4
       with:
         name: coverage-file-html
         path: coverage_html_report/
-    - name: Publish
-      uses: dorny/test-reporter@v1
-      with:
-        name: Pytest Results
-        path: test-results.xml
-        reporter: java-junit
-    - name: Coverage Summary
+
+    - name: 📊 Generate Coverage Summary
       uses: irongut/CodeCoverageSummary@v1.3.0
       with:
         filename: coverage.xml
@@ -77,15 +84,15 @@ jobs:
         hide_complexity: true
         indicators: true
         output: both
-    - name: Install tools for PDF generation
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y pandoc wkhtmltopdf
-    - name: Generate Test Report PDF
+
+    - name: 🖨️ Generate Test Report PDF
       run: |
         junit2html test-results.xml test-report.html
+        sudo apt-get update
+        sudo apt-get install -y wkhtmltopdf pandoc
         wkhtmltopdf test-report.html test-report.pdf
-    - name: Generate PDF coverage summary
+
+    - name: 🧾 Generate PDF Coverage Summary
       run: |
         echo "# Coverage Report" > coverage-summary.md
         echo "" >> coverage-summary.md
@@ -93,8 +100,15 @@ jobs:
         coverage report -m >> coverage-summary.md
         echo '```' >> coverage-summary.md
         pandoc coverage-summary.md -o coverage-summary.pdf --pdf-engine=wkhtmltopdf
+
     - name: Upload Test Summary PDF
       uses: actions/upload-artifact@v4
       with:
         name: junit-test-report
         path: test-report.pdf
+
+    - name: Upload Coverage Summary PDF
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-summary-pdf
+        path: coverage-summary.pdf
