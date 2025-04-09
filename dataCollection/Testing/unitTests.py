@@ -338,10 +338,10 @@ def test_upload_csv_to_s3_real():
 
     # Capture the date string BEFORE uploading
     upload_date_str = datetime.now().strftime("%Y-%m-%d")
-    key = f"testcompany_{upload_date_str}_news.csv"
+    key = f"user_testcompany_{upload_date_str}_news.csv"
 
     # Upload to S3
-    upload_csv_to_s3("testcompany", df)
+    upload_csv_to_s3("user","testcompany", df)
 
     # Recreate S3 client
     s3 = create_s3_client()
