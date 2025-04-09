@@ -291,42 +291,56 @@ def test_get_stocks_for_news_with_real_s3():
     
 
 def test_get_latest_news_date_from_s3_cases():
-    # Create the S3 client using assumed role credentials
+    from src.dataCol import get_latest_news_date_from_s3  # Adjust path if needed
     s3 = create_s3_client()
+    username = "user"
+    company = "apple"
 
     # Ensure the bucket exists
     try:
         s3.head_bucket(Bucket=CLIENT_BUCKET_NAME2)
     except s3.exceptions.NoSuchBucket:
-        print(f"The bucket {CLIENT_BUCKET_NAME2} does not exist.")
+        pytest.fail(f"The bucket {CLIENT_BUCKET_NAME2} does not exist.")
         return
 
-    # Clean up old test files to ensure the test is accurate
+    # Clean up any existing test files for a clean slate
+    prefix = f"{username}_{company}_"
     print("Cleaning up old test files in the S3 bucket...")
-    response = s3.list_objects_v2(Bucket=CLIENT_BUCKET_NAME2, Prefix="apple_")
+    response = s3.list_objects_v2(Bucket=CLIENT_BUCKET_NAME2, Prefix=prefix)
     for obj in response.get("Contents", []):
         key = obj["Key"]
         print(f"Deleting: {key}")
         s3.delete_object(Bucket=CLIENT_BUCKET_NAME2, Key=key)
 
-    # Upload test files to S3 with known dates
+    # Upload test files for the user/company
     print("Uploading test files to the S3 bucket...")
-    s3.put_object(Bucket=CLIENT_BUCKET_NAME2, Key="apple_2023-01-01_news.csv", Body="dummy data")
-    s3.put_object(Bucket=CLIENT_BUCKET_NAME2, Key="apple_2023-05-10_news.csv", Body="dummy data")
-    s3.put_object(Bucket=CLIENT_BUCKET_NAME2, Key="apple_2023-04-15_news.csv", Body="dummy data")
-    s3.put_object(Bucket=CLIENT_BUCKET_NAME2, Key="banana_2023-01-01_news.csv", Body="dummy data")
+    s3.put_object(Bucket=CLIENT_BUCKET_NAME2, Key=f"{username}_{company}_2023-01-01_news.csv", Body="dummy data")
+    s3.put_object(Bucket=CLIENT_BUCKET_NAME2, Key=f"{username}_{company}_2023-05-10_news.csv", Body="dummy data")
+    s3.put_object(Bucket=CLIENT_BUCKET_NAME2, Key=f"{username}_{company}_2023-04-15_news.csv", Body="dummy data")
 
-    # Call the function to get the latest news date for 'apple'
-    print("Calling get_latest_news_date_from_s3('apple')...")
-    latest_date = get_latest_news_date_from_s3("apple")
-    print(f"Latest date for apple: {latest_date}")
+    # Also upload a file for a different company to ensure it’s ignored
+    s3.put_object(Bucket=CLIENT_BUCKET_NAME2, Key=f"{username}_banana_2023-01-01_news.csv", Body="dummy data")
 
-    # Expecting 2023-05-10
+    # Call the function and verify result
+    print(f"Calling get_latest_news_date_from_s3('{company}', '{username}')...")
+    latest_date = get_latest_news_date_from_s3(company, username)
     expected_date = datetime(2023, 5, 10, tzinfo=timezone.utc)
+
+    print(f"Latest date returned: {latest_date}")
     print(f"Expected date: {expected_date}")
 
-    # Remove tz for fair comparison
-    assert latest_date.replace(tzinfo=None) == expected_date.replace(tzinfo=None) 
+    assert latest_date == expected_date
+
+    # Clean up after test
+    print("Cleaning up uploaded test files...")
+    keys_to_delete = [
+        f"{username}_{company}_2023-01-01_news.csv",
+        f"{username}_{company}_2023-05-10_news.csv",
+        f"{username}_{company}_2023-04-15_news.csv",
+        f"{username}_banana_2023-01-01_news.csv"
+    ]
+    for key in keys_to_delete:
+        s3.delete_object(Bucket=CLIENT_BUCKET_NAME2, Key=key)
     
 def test_upload_csv_to_s3_real():
     # Create dummy DataFrame
@@ -338,10 +352,10 @@ def test_upload_csv_to_s3_real():
 
     # Capture the date string BEFORE uploading
     upload_date_str = datetime.now().strftime("%Y-%m-%d")
-    key = f"testcompany_{upload_date_str}_news.csv"
+    key = f"user_testcompany_{upload_date_str}_news.csv"
 
     # Upload to S3
-    upload_csv_to_s3("testcompany", df)
+    upload_csv_to_s3("user","testcompany", df)
 
     # Recreate S3 client
     s3 = create_s3_client()

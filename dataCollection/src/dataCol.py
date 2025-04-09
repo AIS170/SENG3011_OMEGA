@@ -208,26 +208,29 @@ def get_stocks_for_news(username):
 #getting the latest data cause we might have a lot of news data for a stock but we need to get the latest one
 #why not delete the outdated ones but what if we design a more better model that works with data for a year
 
-def get_latest_news_date_from_s3(company_name):
-    prefix = f"{company_name}_"
+def get_latest_news_date_from_s3(company_name, username):
+    prefix = f"{username}_{company_name}_"
+    
     sts_client = boto3.client('sts')
     assumed_role_object = sts_client.assume_role(
         RoleArn=CLIENT_ROLE_ARN,
         RoleSessionName="AssumeRoleSession1"
     )
     credentials = assumed_role_object['Credentials']
+    
     s3 = boto3.client(
         's3',
         aws_access_key_id=credentials['AccessKeyId'],
         aws_secret_access_key=credentials['SecretAccessKey'],
         aws_session_token=credentials['SessionToken'],
-        region_name='ap-southeast-2'  # Sydney region
+        region_name='ap-southeast-2'
     )
+    
     paginator = s3.get_paginator('list_objects_v2')
     pages = paginator.paginate(Bucket=CLIENT_BUCKET_NAME2, Prefix=prefix)
 
-    latest_date = None  # Start with no latest date, so the first valid date found will be used
-    pattern = re.compile(f"{company_name}_(\\d{{4}}-\\d{{2}}-\\d{{2}})_news\\.csv")
+    latest_date = None
+    pattern = re.compile(f"{username}_{company_name}_(\\d{{4}}-\\d{{2}}-\\d{{2}})_news\\.csv")
 
     for page in pages:
         for obj in page.get('Contents', []):
@@ -235,22 +238,16 @@ def get_latest_news_date_from_s3(company_name):
             match = pattern.match(key)
             if match:
                 file_date_str = match.group(1)
-                
                 try:
-                    # Parse the date from the filename and ensure it is timezone-aware (UTC)
-                    file_date = datetime.strptime(file_date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)  # Ensure timezone-aware date
-
-                    # Debugging: print the current file's name and date
+                    file_date = datetime.strptime(file_date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
                     print(f"Processing file: {key} with date: {file_date}")
 
-                    # Only set latest_date if it's the first date found or a newer date
                     if latest_date is None or file_date > latest_date:
                         latest_date = file_date
-
                 except ValueError as e:
                     print(f"Error parsing date for file {key}: {e}")
 
-    print(f"Latest date found: {latest_date}")  # Debug print to track the latest date
+    print(f"Latest date found: {latest_date}")
     return latest_date
 
 def fetch_company_news_df(company_name):
@@ -302,11 +299,11 @@ def fetch_company_news_df(company_name):
 #and with this to_csv is very easy as already in tabular format
 # upload it to s3 and ensure in csv format so did the buffering of the df which is records dataframe like an excel or sql table
 # and with this to_csv is very easy as already in tabular format
-def upload_csv_to_s3(company_name, df, date_str=None):
+def upload_csv_to_s3(username, company_name, df, date_str=None):
     if date_str is None:
         date_str = datetime.now().strftime("%Y-%m-%d")
 
-    key = f"{company_name}_{date_str}_news.csv"
+    key = f"{username}_{company_name}_{date_str}_news.csv"
     csv_buffer = io.StringIO()
     df.to_csv(csv_buffer, index=False)
 
@@ -346,13 +343,13 @@ def getallCompanyNews():
 
     for company in companies:
         try:
-            latest_date = get_latest_news_date_from_s3(company)
+            latest_date = get_latest_news_date_from_s3(company, name)
             if not latest_date or latest_date < ONE_MONTH_AGO:
                 print(f"Fetching news for {company}...")
                 df = fetch_company_news_df(company)
                 
                 if not df.empty:
-                    upload_csv_to_s3(company, df)
+                    upload_csv_to_s3(name, company, df)
                     files_added += 1
                 else:
                     print(f"No recent news for {company}")

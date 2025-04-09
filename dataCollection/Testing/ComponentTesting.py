@@ -142,7 +142,7 @@ def test_getallCompanyNews_route(client):
     s3.put_object(Bucket=CLIENT_BUCKET_NAME1, Key="e2etestuser#testco_stock_data.csv", Body="test,data\n1,2")
 
     today = datetime.now().strftime("%Y-%m-%d")
-    news_key = f"testco_{today}_news.csv"
+    news_key = f"e2etestuser_testco_{today}_news.csv"
     try:
         s3.delete_object(Bucket=CLIENT_BUCKET_NAME2, Key=news_key)
     except:
@@ -167,7 +167,7 @@ def test_news_file_uploaded(client):
     s3.put_object(Bucket=CLIENT_BUCKET_NAME1, Key="newsuser#microsoft_stock_data.csv", Body="dummy,data\n1,2")
 
     today = datetime.now().strftime("%Y-%m-%d")
-    key = f"microsoft_{today}_news.csv"
+    key = f"newsuser_microsoft_{today}_news.csv"
     try:
         s3.delete_object(Bucket=CLIENT_BUCKET_NAME2, Key=key)
     except:
@@ -183,7 +183,7 @@ def test_news_file_uploaded(client):
 def test_news_skips_if_recent_exists(client):
     s3 = create_s3_client()
     today = datetime.now().strftime("%Y-%m-%d")
-    key = f"tesla_{today}_news.csv"
+    key = f"skipuser_tesla_{today}_news.csv"
     s3.put_object(Bucket=CLIENT_BUCKET_NAME1, Key="skipuser#tesla_stock_data.csv", Body="1,2")
     s3.put_object(Bucket=CLIENT_BUCKET_NAME2, Key=key, Body="dummy content")
 
@@ -208,3 +208,4 @@ def test_news_handles_exception_gracefully(client, monkeypatch):
     assert isinstance(res.get_json()["files_added"], int)
 
     s3.delete_object(Bucket=CLIENT_BUCKET_NAME1, Key="erruser#fakeco_stock_data.csv")
+
