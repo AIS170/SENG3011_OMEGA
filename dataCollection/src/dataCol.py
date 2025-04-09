@@ -8,6 +8,9 @@ import re
 from datetime import datetime, timedelta, timezone
 import io
 from dateutil import parser
+import nltk
+nltk.download('vader_lexicon')
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
 app = Flask(__name__)
@@ -20,6 +23,8 @@ ONE_MONTH_AGO = datetime.now(timezone.utc) - timedelta(days=30)
 TODAY_STR = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 #ik we not in utc but we not really displaying this info for time rather date so should be fine for little discrepancies
 #but i can fix this later
+
+sia = SentimentIntensityAnalyzer()
 
 def write_to_client_s3(filename, bucketname):
     sts_client = boto3.client('sts')
@@ -275,15 +280,19 @@ def fetch_company_news_df(company_name):
                 pub_time = parser.isoparse(pub_date_str).astimezone(timezone.utc)
                 if pub_time < ONE_MONTH_AGO:
                     continue  # Skip old articles
+                
+                title = item.get("content", {}).get("title", "")
+                summary = item.get("content", {}).get("summary", "")
+                content = f"{title}. {summary}"  # Combine both for sentiment
+
+                sentiment = sia.polarity_scores(content)["compound"]
 
                 records.append({
                     "company_name": company_name,
-                    "article_title": item.get("content", {}).get("title", ""),
-                    "article_content": item.get("content", {}).get("summary", ""),
-                    "source": item.get("content", {}).get("provider", {}).get("displayName", ""),
+                    "article_title": title,
                     "url": item.get("content", {}).get("canonicalUrl", {}).get("url", ""),
                     "published_at": pub_time.isoformat(),
-                    "sentiment_score": 0.0  # Placeholder
+                    "sentiment_score": sentiment
                 })
             except Exception as e:
                 print(f"Error parsing news item: {e}")
