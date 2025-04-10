@@ -5,6 +5,7 @@ from botocore.exceptions import ClientError
 
 from ..implementation.RetrievalInterface import RetrievalInterface
 
+
 @pytest.mark.filterwarnings(r"ignore:datetime.datetime.utcnow\(\) is deprecated:DeprecationWarning")
 class TestPushToDynamo:
     @mock_aws
@@ -17,7 +18,6 @@ class TestPushToDynamo:
         username = "user1"
         tableName = "seng3011-test-dynamodb"
         data_src = "finance"
-        
 
         retrievalInterface = RetrievalInterface()
         retrievalInterface.pushToDynamoV2(data_src, stockName, fileContent, username, tableName)
