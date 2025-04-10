@@ -3,6 +3,8 @@ from boto3.dynamodb.types import TypeDeserializer
 import csv
 
 import sys
+
+from pprint import pprint
 from botocore.exceptions import ClientError
 
 # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/programming-with-python.html for dynamoDB
@@ -10,6 +12,8 @@ from botocore.exceptions import ClientError
 from exceptions.UserNotFound import UserNotFound
 from exceptions.UserAlreadyExists import UserAlreadyExists
 from exceptions.UserHasFile import UserHasFile
+
+from RetrievalMicroserviceHelpers import createDynamoDBContentList
 
 
 class RetrievalInterface:
@@ -217,32 +221,34 @@ class RetrievalInterface:
 
         dynamodb = boto3.client("dynamodb", region_name="ap-southeast-2")
 
-        reader = csv.DictReader(fileContent.split("\n"), delimiter=",")
+        contentList = createDynamoDBContentList(data_src, stockName, fileContent)
 
-        contentList = []
-        for line in list(reader):
-            # if we have a blank line (especially at the end of a file)
-            if line == "":
-                continue
-            date = line.get("Date")
-            closeVal = line.get("Close")
+        pprint(f"COntent LIST = {contentList}")
+        # produce contentList based on data_src
+        # for line in list(reader):
 
-            contentList.append(
-                {
-                    "M": {
-                        "attribute": {"M": {"close": {"S": closeVal}, "stock_name": {"S": stockName}}},
-                        "event-type": {"S": "stock-ohlc"},
-                        "time_object": {
-                            "M": {
-                                "duration": {"S": "0"},
-                                "duration-unit": {"S": "days"},
-                                "time-stamp": {"S": date},
-                                "time-zone": {"S": "GMT+11"},
-                            }
-                        },
-                    }
-                }
-            )
+        #     # if we have a blank line (especially at the end of a file)
+        #     if line == "":
+        #         continue
+        #     date = line.get("Date")
+        #     closeVal = line.get("Close")
+
+        #     contentList.append(
+        #         {
+        #             "M": {
+        #                 "attribute": {"M": {"close": {"S": closeVal}, "stock_name": {"S": stockName}}},
+        #                 "event-type": {"S": "stock-ohlc"},
+        #                 "time_object": {
+        #                     "M": {
+        #                         "duration": {"S": "0"},
+        #                         "duration-unit": {"S": "days"},
+        #                         "time-stamp": {"S": date},
+        #                         "time-zone": {"S": "GMT+11"},
+        #                     }
+        #                 },
+        #             }
+        #         }
+        #     )
 
         fileName = f"{data_src}_{stockName}"
 
