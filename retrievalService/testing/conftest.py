@@ -30,6 +30,21 @@ def s3_mock(rootdir):
 
 
 @pytest.fixture(scope="function")
+def s3_news_table(rootdir):
+    bucket_name = "seng3011-omega-news-data"
+    fileName = os.path.join(rootdir, "user1_honda_2025-04-09_news.csv")
+    with open(fileName) as f:
+        fileContent = f.read()
+
+    with mock_aws():
+        s3 = boto3.client("s3")
+        s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "ap-southeast-2"})
+        s3.put_object(Bucket=bucket_name, Key="user1_honda_2025-04-09_news.csv", Body=fileContent.encode("utf-8"))
+
+        yield s3
+
+
+@pytest.fixture(scope="function")
 def dynamodb_mock():
     """Sets up a mock DynamoDB table before each test using mock_aws."""
     with mock_aws():

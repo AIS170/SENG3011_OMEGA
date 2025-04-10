@@ -2,7 +2,8 @@ from flask import Flask, request
 from botocore.exceptions import ClientError
 from RetrievalInterface import RetrievalInterface
 
-from RetrievalMicroserviceHelpers import getTableNameFromKey, adageFormatter
+from RetrievalMicroserviceHelpers import getTableNameFromKey, getS3FileName, adageFormatter, validateDataSrc
+from flask_cors import CORS
 
 # import sys
 from datetime import datetime
@@ -18,6 +19,9 @@ from exceptions.InvalidDataKey import InvalidDataKey
 # from exceptions.UserHasFile import UserHasFile
 
 app = Flask(__name__)
+
+CORS(app)
+
 
 AWS_S3_BUCKET_NAME = "seng3011-omega-25t1-testing-bucket"
 DYNAMO_DB_NAME = "seng3011-test-dynamodb"
@@ -135,13 +139,13 @@ def getAll(username: str):
 @app.route("/v2/retrieve/<username>/<data_type>/<stockname>/")
 def retrieveV2(username, data_type, stockname):
     try:
+        validateDataSrc(data_type)
         retrievalInterface = RetrievalInterface()
         s3BucketName = getTableNameFromKey(data_type)
+        date = request.args.get("date")
 
-        # need to think how this might change depending on the bucket that i am reaching into (collab with Rakshil here)
-        filenameS3 = f"{username}#{stockname}_stock_data.csv"
+        filenameS3 = getS3FileName(username, data_type, stockname, date)       # getFileName(username, data_type, stockname)
         filenameDynamo = f"{data_type}_{stockname}"
-        
         found, content, index = retrievalInterface.getFileFromDynamo(filenameDynamo, username, DYNAMO_DB_NAME)
 
         if found:
@@ -155,7 +159,8 @@ def retrieveV2(username, data_type, stockname):
             content = retrievalInterface.pull(s3BucketName, f"{filenameS3}")
             retrievalInterface.pushToDynamoV2(data_type, stockname, content, username, DYNAMO_DB_NAME)
 
-            found, content, index = retrievalInterface.getFileFromDynamo(stockname, username, DYNAMO_DB_NAME)
+            found, content, index = retrievalInterface.getFileFromDynamo(filenameDynamo, username, DYNAMO_DB_NAME)
+
             return (
                 json.dumps(
                     adageFormatter(s3BucketName, stockname, content, data_type)
@@ -180,7 +185,6 @@ def retrieveV2(username, data_type, stockname):
     except UserNotFound:
         return json.dumps({"UserNotFound": "Username not found; ensure you have registered"}), 401
     except InvalidDataKey as e:
-        print(f"Oogly boogly i am a chicken")
         return json.dumps({"InvalidDataKey": f"{e}"}), 400
     except Exception as e:
         return json.dumps({"InternalError": f"Something went wrong; please report - error = {e}"}), 500

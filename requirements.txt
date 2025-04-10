@@ -7,3 +7,4 @@ yfinance
 pandas
 requests
 pytest-mock
+flask-cors
