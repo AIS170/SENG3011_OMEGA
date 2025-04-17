@@ -11,6 +11,7 @@ from dateutil import parser
 import nltk
 nltk.download('vader_lexicon')
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from GoogleNews import GoogleNews
 
 
 app = Flask(__name__)
@@ -371,7 +372,47 @@ def getallCompanyNews():
         "status": "complete",
         "files_added": files_added
     }), 200
+    
 
+
+@app.route('/sportsNews', methods=['GET'])
+def get_sports_news():
+    news = fetch_week_of_sports_news()
+    return jsonify(news)
+
+
+def fetch_week_of_sports_news():
+    today = datetime.utcnow()
+    one_week_ago = today - timedelta(days=7)
+    all_articles = []
+
+    for i in range(7):  # Each day in the past week
+        day = today - timedelta(days=i)
+        day_str = day.strftime('%m/%d/%Y')
+
+        googlenews = GoogleNews(lang='en')
+        googlenews.set_time_range(day_str, day_str)
+        googlenews.clear()
+        googlenews.search('sports')
+        results = googlenews.results(sort=True)
+
+        for article in results:
+            all_articles.append({
+                "headline": article.get("title", ""),
+                "summary": article.get("desc", ""),
+                "published_date": article.get("date", ""),
+                "source": article.get("media", ""),
+                "link": article.get("link", "")
+            })
+
+    return {
+        "sport": "ALL SPORTS",
+        "from": one_week_ago.strftime('%m/%d/%Y'),
+        "to": today.strftime('%m/%d/%Y'),
+        "article_count": len(all_articles),
+        "articles": all_articles
+    }
+    
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5001)
 
