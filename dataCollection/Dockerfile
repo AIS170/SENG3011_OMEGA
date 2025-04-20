@@ -7,4 +7,4 @@ RUN pip3 install -r requirements.txt
 EXPOSE 5001
 COPY . /python-docker
 ENTRYPOINT [ "python3" ]
-CMD [ "dataCol.py" ]
+CMD [ "./src/dataCol.py" ]
