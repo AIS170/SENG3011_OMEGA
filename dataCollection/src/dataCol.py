@@ -13,8 +13,12 @@ import nltk
 nltk.download('vader_lexicon')
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from GoogleNews import GoogleNews
+from flask_cors import CORS
+
+
 
 app = Flask(__name__)
+CORS(app)
 
 CLIENT_ROLE_ARN = "arn:aws:iam::339712883212:role/sharing-s3-bucket"
 CLIENT_BUCKET_NAME1 = "seng3011-omega-25t1-testing-bucket"
