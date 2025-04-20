@@ -44,5 +44,5 @@ jobs:
           task-definition: ./dataCollection/col_Task_definition.json
           service: data-col-service
           cluster: datacol1
-          container-name: dataCol123
+          container-name: data
           image: ${{ steps.build-image.outputs.image }}
