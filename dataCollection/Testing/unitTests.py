@@ -107,7 +107,7 @@ def test_fetch_company_news_df_sentiment_and_timestamp():
     print(f"Sentiment and timestamp check for apple: {df_check}")  # Proof print
     if not df_check.empty:
         assert df_check["sentiment_score"].dtype == float
-        expected_cols = ["company_name", "article_title", "article_content", "source", "url", "published_at", "sentiment_score"]
+        expected_cols = ["company_name", "article_title", "url", "published_at", "sentiment_score"]
         for col in expected_cols:
             assert col in df_check.columns
         for val in df_check["published_at"]:

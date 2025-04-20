@@ -7,3 +7,5 @@ yfinance
 pandas
 requests
 pytest-mock
+nltk
+GoogleNews
