@@ -1,6 +1,6 @@
 import pytest
 from moto import mock_aws
-from pprint import pprint
+
 import json
 
 # from ..implementation.RetrievalMicroservice import app
@@ -29,7 +29,6 @@ class TestRetrieveRoute:
         username = "user1"
 
         res = client.get(f"/v1/retrieve/{username}/fakestock/")
-        pprint(res.data)
         assert res.status_code == 400
         assert json.loads(res.data)["StockNotFound"] is not None
 

@@ -2,8 +2,6 @@ import pytest
 import os
 from moto import mock_aws
 
-# from pprint import pprint
-
 from ..implementation.RetrievalInterface import RetrievalInterface
 
 
