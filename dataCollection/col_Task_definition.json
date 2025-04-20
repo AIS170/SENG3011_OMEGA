@@ -2,7 +2,7 @@
     "taskDefinitionArn": "arn:aws:ecs:ap-southeast-2:554192822376:task-definition/datacoll:1",
     "containerDefinitions": [
         {
-            "name": "data",
+            "name": "dataCol123",
             "image": "554192822376.dkr.ecr.ap-southeast-2.amazonaws.com/datacollection1:latest",
             "cpu": 0,
             "portMappings": [
