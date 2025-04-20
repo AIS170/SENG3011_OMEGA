@@ -15,6 +15,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from GoogleNews import GoogleNews
 from flask_cors import CORS
 
+#meeee bombbbaclarttttt
 
 
 app = Flask(__name__)
