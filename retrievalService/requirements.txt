@@ -3,3 +3,4 @@ moto[ec2,s3,all]
 pytest
 flask
 pytz
+flask-cors
