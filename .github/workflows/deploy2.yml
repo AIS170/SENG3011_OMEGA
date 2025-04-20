@@ -29,7 +29,7 @@ jobs:
       - name: Build and push Docker image
         id: build-image
         env:
-          ECR_REGISTRY: 554192822376>.dkr.ecr.ap-southeast-2.amazonaws.com
+          ECR_REGISTRY: 554192822376.dkr.ecr.ap-southeast-2.amazonaws.com
           ECR_REPOSITORY: datacollection1
           IMAGE_TAG: latest
         run: |
