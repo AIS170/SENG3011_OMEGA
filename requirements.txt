@@ -9,4 +9,4 @@ requests
 pytest-mock
 nltk
 flask-cors
-git+https://github.com/kotartemiy/pygooglenews.git
+git+https://github.com/luojia65/pygooglenews.git@main
