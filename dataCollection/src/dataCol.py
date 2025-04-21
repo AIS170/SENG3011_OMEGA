@@ -2,7 +2,6 @@ from flask import Flask, jsonify, request
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from flask_cors import CORS
 from gnews import GNews
-from zoneinfo import ZoneInfo
 import yfinance as yf
 import pandas as pd
 import requests
