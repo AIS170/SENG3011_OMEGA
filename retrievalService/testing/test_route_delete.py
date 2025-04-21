@@ -5,7 +5,9 @@ import json
 # from ..implementation.RetrievalMicroservice import app
 
 
-@pytest.mark.filterwarnings(r"ignore:datetime.datetime.utcnow\(\) is deprecated:DeprecationWarning")
+@pytest.mark.filterwarnings(
+    r"ignore:datetime.datetime.utcnow\(\) is deprecated:DeprecationWarning"
+)
 class TestDeleteRoute:
     @mock_aws
     def test_delete(self, rootdir, client, s3_mock, test_table):

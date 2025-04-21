@@ -4,7 +4,9 @@ from moto import mock_aws
 import os
 import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../implementation")))
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "../implementation"))
+)
 from ..implementation.RetrievalMicroservice import app as flask_app  # noqa: E402
 
 
@@ -23,8 +25,15 @@ def s3_mock(rootdir):
     with mock_aws():
         # Create a mock S3 bucket and upload a test file.
         s3 = boto3.client("s3")
-        s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "ap-southeast-2"})
-        s3.put_object(Bucket=bucket_name, Key="user1#apple_stock_data.csv", Body=fileContent.encode("utf-8"))
+        s3.create_bucket(
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"LocationConstraint": "ap-southeast-2"},
+        )
+        s3.put_object(
+            Bucket=bucket_name,
+            Key="user1#apple_stock_data.csv",
+            Body=fileContent.encode("utf-8"),
+        )
 
         yield s3
 
@@ -38,8 +47,15 @@ def s3_news_table(rootdir):
 
     with mock_aws():
         s3 = boto3.client("s3")
-        s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "ap-southeast-2"})
-        s3.put_object(Bucket=bucket_name, Key="user1_honda_2025-04-09_news.csv", Body=fileContent.encode("utf-8"))
+        s3.create_bucket(
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"LocationConstraint": "ap-southeast-2"},
+        )
+        s3.put_object(
+            Bucket=bucket_name,
+            Key="user1_honda_2025-04-09_news.csv",
+            Body=fileContent.encode("utf-8"),
+        )
 
         yield s3
 
@@ -69,7 +85,11 @@ def test_table(dynamodb_mock):
             ],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
-        item = {"username": {"S": username}, "analysis": {"L": []}, "retrievedFiles": {"L": []}}
+        item = {
+            "username": {"S": username},
+            "analysis": {"L": []},
+            "retrievedFiles": {"L": []},
+        }
 
         dynamodb_mock.put_item(TableName=tableName, Item=item)
 
@@ -97,9 +117,17 @@ def test_table_two_users(dynamodb_mock):
             ],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
-        item = {"username": {"S": username}, "analysis": {"L": []}, "retrievedFiles": {"L": []}}
+        item = {
+            "username": {"S": username},
+            "analysis": {"L": []},
+            "retrievedFiles": {"L": []},
+        }
 
-        item2 = {"username": {"S": username2}, "analysis": {"L": []}, "retrievedFiles": {"L": []}}
+        item2 = {
+            "username": {"S": username2},
+            "analysis": {"L": []},
+            "retrievedFiles": {"L": []},
+        }
 
         dynamodb_mock.put_item(TableName=tableName, Item=item)
 

@@ -9,20 +9,21 @@ CLIENT_BUCKET_NAME2 = "seng3011-omega-news-data"
 CLIENT_BUCKET_NAME3 = "seng3011-collection-usernames"
 BASE_URL = "http://localhost:5001"
 
+
 def create_s3_client():
-    sts_client = boto3.client('sts')
+    sts_client = boto3.client("sts")
     assumed = sts_client.assume_role(
-        RoleArn=CLIENT_ROLE_ARN,
-        RoleSessionName="AssumeRoleSession1"
+        RoleArn=CLIENT_ROLE_ARN, RoleSessionName="AssumeRoleSession1"
     )
-    creds = assumed['Credentials']
+    creds = assumed["Credentials"]
     return boto3.client(
-        's3',
-        aws_access_key_id=creds['AccessKeyId'],
-        aws_secret_access_key=creds['SecretAccessKey'],
-        aws_session_token=creds['SessionToken'],
-        region_name="ap-southeast-2"
+        "s3",
+        aws_access_key_id=creds["AccessKeyId"],
+        aws_secret_access_key=creds["SecretAccessKey"],
+        aws_session_token=creds["SessionToken"],
+        region_name="ap-southeast-2",
     )
+
 
 @pytest.mark.integration
 def test_contract_end_to_end():
@@ -93,4 +94,3 @@ def test_contract_end_to_end():
             print(f"  Deleted user profile: {profile_key}")
         except Exception as e:
             print(f"  Failed to delete user profile: {e}")
-

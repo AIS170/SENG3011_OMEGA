@@ -5,9 +5,10 @@ from botocore.exceptions import ClientError
 from ..implementation.RetrievalInterface import RetrievalInterface
 
 
-@pytest.mark.filterwarnings(r"ignore:datetime.datetime.utcnow\(\) is deprecated:DeprecationWarning")
+@pytest.mark.filterwarnings(
+    r"ignore:datetime.datetime.utcnow\(\) is deprecated:DeprecationWarning"
+)
 class TestDeleteFromDynamo:
-
     @mock_aws
     def test_delete_file(self, test_table, rootdir):
         fileName = os.path.join(rootdir, "user1#apple_stock_data.csv")

@@ -10,7 +10,9 @@ from ..implementation.RetrievalInterface import RetrievalInterface
 
 # moto uses depreacted datetime.datetime.utcnow which causes a Deprecation Warning
 # Therefore, I am choosing to hide this warning
-@pytest.mark.filterwarnings(r"ignore:datetime.datetime.utcnow\(\) is deprecated:DeprecationWarning")
+@pytest.mark.filterwarnings(
+    r"ignore:datetime.datetime.utcnow\(\) is deprecated:DeprecationWarning"
+)
 class TestPushToDynamo:
     @mock_aws
     def test_push_file(self, test_table, rootdir):
@@ -47,7 +49,9 @@ class TestPushToDynamo:
 
         retrievalInterface = RetrievalInterface()
         with pytest.raises(ClientError) as errorInfo:
-            retrievalInterface.pushToDynamo(stockName, fileContent, username, "fakeTableName")
+            retrievalInterface.pushToDynamo(
+                stockName, fileContent, username, "fakeTableName"
+            )
         assert errorInfo.value.response["Error"]["Code"] == "ResourceNotFoundException"
 
     @mock_aws
@@ -62,7 +66,9 @@ class TestPushToDynamo:
         retrievalInterface = RetrievalInterface()
         # with pytest.raises(botocore.errorfactory.ResourceNotFoundException):
         with pytest.raises(Exception):
-            retrievalInterface.pushToDynamo(stockName, fileContent, "fake-user", tableName)
+            retrievalInterface.pushToDynamo(
+                stockName, fileContent, "fake-user", tableName
+            )
 
     @mock_aws
     def test_user_double_pushes(self, test_table, rootdir):
@@ -76,7 +82,9 @@ class TestPushToDynamo:
 
         retrievalInterface = RetrievalInterface()
 
-        response = retrievalInterface.pushToDynamo(stockName, fileContent, username, tableName)
+        response = retrievalInterface.pushToDynamo(
+            stockName, fileContent, username, tableName
+        )
         assert response is True
 
         with pytest.raises(Exception):
