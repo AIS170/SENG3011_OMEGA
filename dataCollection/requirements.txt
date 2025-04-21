@@ -4,10 +4,11 @@ pytest
 coverage
 flask
 yfinance
-pandas
+pandas>=1.5.3  # safe for Python 3.10+
+numpy>=1.23.0  # compatible with Python 3.10+
 requests
 pytest-mock
 nltk
 flask-cors
 pygooglenews==0.1.1
-feedparser>=6.0.10  # Modern version, removes 2to3 issue
+feedparser>=6.0.10
