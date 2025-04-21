@@ -18,9 +18,6 @@ import nltk
 nltk.download("vader_lexicon")
 SYDNEY_TZ = ZoneInfo("Australia/Sydney")
 
-# meeee bombbbaclarttttt
-
-
 app = Flask(__name__)
 CORS(app)
 
