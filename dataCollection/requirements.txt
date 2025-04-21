@@ -10,3 +10,4 @@ pytest-mock
 nltk
 GoogleNews
 flask-cors
+pygooglenews
