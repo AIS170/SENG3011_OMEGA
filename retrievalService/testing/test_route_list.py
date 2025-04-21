@@ -3,7 +3,9 @@ from moto import mock_aws
 import json
 
 
-@pytest.mark.filterwarnings(r"ignore:datetime.datetime.utcnow\(\) is deprecated:DeprecationWarning")
+@pytest.mark.filterwarnings(
+    r"ignore:datetime.datetime.utcnow\(\) is deprecated:DeprecationWarning"
+)
 class TestListRoute:
     @mock_aws
     def test_list(self, rootdir, client, s3_mock, test_table):
