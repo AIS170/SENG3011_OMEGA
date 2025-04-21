@@ -4,11 +4,10 @@ pytest
 coverage
 flask
 yfinance
-pandas>=1.5.3
-numpy>=1.23.0
+pandas
+numpy
 requests
 pytest-mock
 nltk
 flask-cors
-pygooglenews==0.1.1
-feedparser>=5.2.1,<6.0.0
+pygooglenews
