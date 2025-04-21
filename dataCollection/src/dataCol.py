@@ -14,9 +14,10 @@ import io
 from dateutil import parser
 import os
 import nltk
+import pytz
 
 nltk.download("vader_lexicon")
-SYDNEY_TZ = ZoneInfo("Australia/Sydney")
+SYDNEY_TZ = pytz.timezone("Australia/Sydney")
 
 app = Flask(__name__)
 CORS(app)

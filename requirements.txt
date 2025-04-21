@@ -12,3 +12,4 @@ nltk
 flask-cors
 ruff
 gnews
+pytz
