@@ -14,8 +14,9 @@ nltk.download('vader_lexicon')
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from flask_cors import CORS
 from gnews import GNews
-from zoneinfo import ZoneInfo
-SYDNEY_TZ = ZoneInfo("Australia/Sydney")
+import pytz
+SYDNEY_TZ = pytz.timezone("Australia/Sydney")
+
 
 #meeee bombbbaclarttttt
 #please work
