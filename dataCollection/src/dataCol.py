@@ -12,7 +12,6 @@ import os
 import nltk
 nltk.download('vader_lexicon')
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from GoogleNews import GoogleNews
 from flask_cors import CORS
 from pygooglenews import GoogleNews
 

@@ -8,6 +8,5 @@ pandas
 requests
 pytest-mock
 nltk
-GoogleNews
 flask-cors
-pygooglenews
+git+https://github.com/kotartemiy/pygooglenews.git
