@@ -329,6 +329,7 @@ def getallCompanyNews():
 
 gn = GoogleNews()
 
+
 @app.route("/sportsnews", methods=["GET"])
 def get_sports_news():
     try:
@@ -361,6 +362,6 @@ def get_sports_news():
             "status": "error",
             "message": str(e)
         }), 500
-
+        
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5001)
