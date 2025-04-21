@@ -330,7 +330,7 @@ def getallCompanyNews():
 gn = GoogleNews()
 
 
-@app.route("/sportsnews", methods=["GET"])
+@app.route("/sportsNews", methods=["GET"])
 def get_sports_news():
     try:
         result = gn.search("sports")
