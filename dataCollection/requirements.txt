@@ -9,7 +9,5 @@ requests
 pytest-mock
 nltk
 flask-cors
-python-dateutil
-
-# Updated pygooglenews using compatible feedparser version via fork
-git+https://github.com/kotartemiy/pygooglenews.git@master#egg=pygooglenews
+pygooglenews==0.1.1
+feedparser>=6.0.10  # Modern version, removes 2to3 issue
