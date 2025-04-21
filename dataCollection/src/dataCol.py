@@ -12,9 +12,8 @@ import os
 import nltk
 nltk.download('vader_lexicon')
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from GoogleNews import GoogleNews
 from flask_cors import CORS
-from pygooglenews import GoogleNews
+from gnews import GNews
 
 #meeee bombbbaclarttttt
 
@@ -327,29 +326,34 @@ def getallCompanyNews():
     
     
 
-gn = GoogleNews()
-
+gn = GNews(language='en', max_results=100)
 
 @app.route("/sportsNews", methods=["GET"])
 def get_sports_news():
     try:
-        result = gn.search("sports")
-        news_items = result['entries']
-
+        # Search for latest sports news
+        news_items = gn.get_news('sports')
         stories = []
         cutoff_time = datetime.now(timezone.utc) - timedelta(hours=48)
 
         for item in news_items:
             try:
-                pub_time = parser.parse(item.published).astimezone(timezone.utc)
+                # Parse and standardize the publication time
+                pub_time = item['published date']
+                if isinstance(pub_time, datetime):
+                    pub_time = pub_time.astimezone(timezone.utc)
+                else:
+                    pub_time = datetime.strptime(pub_time, "%a, %d %b %Y %H:%M:%S %Z").replace(tzinfo=timezone.utc)
+
+                # Filter by time window
                 if pub_time >= cutoff_time:
                     stories.append({
-                        'title': item.title,
-                        'link': item.link,
+                        'title': item['title'],
+                        'link': item['url'],
                         'published': pub_time.isoformat()
                     })
-            except Exception as e:
-                continue  # Skip items with invalid dates
+            except Exception:
+                continue  # Skip any bad entries
 
         return jsonify({
             "status": "success",
