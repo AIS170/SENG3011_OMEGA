@@ -11,4 +11,4 @@ pytest-mock
 nltk
 flask-cors
 gnews
-zoneinfo
+pytz
