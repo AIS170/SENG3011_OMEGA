@@ -14,6 +14,7 @@ nltk.download('vader_lexicon')
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from GoogleNews import GoogleNews
 from flask_cors import CORS
+from pygooglenews import GoogleNews
 
 #meeee bombbbaclarttttt
 
@@ -323,43 +324,43 @@ def getallCompanyNews():
         "status": "complete",
         "files_added": files_added
     }), 200
+    
+    
 
-@app.route('/sportsNews', methods=['GET'])
+gn = GoogleNews()
+
+@app.route("/sportsnews", methods=["GET"])
 def get_sports_news():
-    news = fetch_week_of_sports_news()
-    return jsonify(news)
+    try:
+        result = gn.search("sports")
+        news_items = result['entries']
 
-def fetch_week_of_sports_news():
-    today = datetime.utcnow()
-    one_week_ago = today - timedelta(days=7)
-    all_articles = []
+        stories = []
+        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=48)
 
-    for i in range(7):
-        day = today - timedelta(days=i)
-        day_str = day.strftime('%m/%d/%Y')
+        for item in news_items:
+            try:
+                pub_time = parser.parse(item.published).astimezone(timezone.utc)
+                if pub_time >= cutoff_time:
+                    stories.append({
+                        'title': item.title,
+                        'link': item.link,
+                        'published': pub_time.isoformat()
+                    })
+            except Exception as e:
+                continue  # Skip items with invalid dates
 
-        googlenews = GoogleNews(lang='en')
-        googlenews.set_time_range(day_str, day_str)
-        googlenews.clear()
-        googlenews.search('sports')
-        results = googlenews.results(sort=True)
+        return jsonify({
+            "status": "success",
+            "article_count": len(stories),
+            "articles": stories
+        })
 
-        for article in results:
-            all_articles.append({
-                "headline": article.get("title", ""),
-                "summary": article.get("desc", ""),
-                "published_date": article.get("date", ""),
-                "source": article.get("media", ""),
-                "link": article.get("link", "")
-            })
-
-    return {
-        "sport": "ALL SPORTS",
-        "from": one_week_ago.strftime('%m/%d/%Y'),
-        "to": today.strftime('%m/%d/%Y'),
-        "article_count": len(all_articles),
-        "articles": all_articles
-    }
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5001)
