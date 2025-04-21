@@ -14,6 +14,8 @@ nltk.download('vader_lexicon')
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from flask_cors import CORS
 from gnews import GNews
+from zoneinfo import ZoneInfo
+SYDNEY_TZ = ZoneInfo("Australia/Sydney")
 
 #meeee bombbbaclarttttt
 
@@ -331,29 +333,33 @@ gn = GNews(language='en', max_results=100)
 @app.route("/sportsNews", methods=["GET"])
 def get_sports_news():
     try:
-        # Search for latest sports news
-        news_items = gn.get_news('sports')
+        news_items = gn.get_news('nba')
         stories = []
         cutoff_time = datetime.now(timezone.utc) - timedelta(hours=48)
 
         for item in news_items:
             try:
-                # Parse and standardize the publication time
                 pub_time = item['published date']
                 if isinstance(pub_time, datetime):
                     pub_time = pub_time.astimezone(timezone.utc)
                 else:
                     pub_time = datetime.strptime(pub_time, "%a, %d %b %Y %H:%M:%S %Z").replace(tzinfo=timezone.utc)
 
-                # Filter by time window
                 if pub_time >= cutoff_time:
                     stories.append({
                         'title': item['title'],
                         'link': item['url'],
-                        'published': pub_time.isoformat()
+                        'published': pub_time  # still in UTC here
                     })
             except Exception:
-                continue  # Skip any bad entries
+                continue
+
+        # Sort stories by time
+        stories.sort(key=lambda x: x['published'], reverse=True)
+
+        # Convert to NSW time for display
+        for s in stories:
+            s['published'] = s['published'].astimezone(SYDNEY_TZ).isoformat()
 
         return jsonify({
             "status": "success",
