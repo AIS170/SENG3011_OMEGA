@@ -9,4 +9,5 @@ requests
 pytest-mock
 nltk
 flask-cors
-git+https://github.com/luojia65/pygooglenews.git@main
+feedparser>=6.0.10
+pygooglenews==0.1.1
