@@ -9,5 +9,7 @@ requests
 pytest-mock
 nltk
 flask-cors
-feedparser>=6.0.10
-pygooglenews==0.1.1
+python-dateutil
+
+# Updated pygooglenews using compatible feedparser version via fork
+git+https://github.com/kotartemiy/pygooglenews.git@master#egg=pygooglenews
