@@ -5,9 +5,11 @@ coverage
 flask
 yfinance
 pandas
+numpy
 requests
 pytest-mock
 nltk
-GoogleNews
 flask-cors
 ruff
+gnews
+setuptools==58.0.0
