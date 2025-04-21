@@ -376,32 +376,37 @@ def getallCompanyNews():
     return jsonify({"status": "complete", "files_added": files_added}), 200
 
 
-gn = GNews(language='en', max_results=100)
+gn = GNews(language="en", max_results=100)
+
 
 @app.route("/sportsNews", methods=["GET"])
 def get_sports_news():
     try:
         # Search for latest sports news
-        news_items = gn.get_news('sports')
+        news_items = gn.get_news("sports")
         stories = []
         cutoff_time = datetime.now(timezone.utc) - timedelta(hours=48)
 
         for item in news_items:
             try:
                 # Parse and standardize the publication time
-                pub_time = item['published date']
+                pub_time = item["published date"]
                 if isinstance(pub_time, datetime):
                     pub_time = pub_time.astimezone(timezone.utc)
                 else:
-                    pub_time = datetime.strptime(pub_time, "%a, %d %b %Y %H:%M:%S %Z").replace(tzinfo=timezone.utc)
+                    pub_time = datetime.strptime(
+                        pub_time, "%a, %d %b %Y %H:%M:%S %Z"
+                    ).replace(tzinfo=timezone.utc)
 
                 # Filter by time window
                 if pub_time >= cutoff_time:
-                    stories.append({
-                        'title': item['title'],
-                        'link': item['url'],
-                        'published': pub_time.isoformat()
-                    })
+                    stories.append(
+                        {
+                            "title": item["title"],
+                            "link": item["url"],
+                            "published": pub_time.isoformat(),
+                        }
+                    )
             except Exception:
                 continue  # Skip any bad entries
 
