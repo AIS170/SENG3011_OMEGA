@@ -11,4 +11,4 @@ pytest-mock
 nltk
 flask-cors
 gnews
-setuptools==58.0.0
+zoneinfo
