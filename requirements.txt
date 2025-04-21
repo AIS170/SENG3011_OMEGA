@@ -12,5 +12,3 @@ nltk
 flask-cors
 ruff
 gnews
-setuptools==58.0.0
-zoneinfo
