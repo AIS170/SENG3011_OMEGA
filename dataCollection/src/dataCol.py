@@ -1,7 +1,4 @@
 from flask import Flask, jsonify, request
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from flask_cors import CORS
-from gnews import GNews
 import yfinance as yf
 import pandas as pd
 import requests
@@ -18,7 +15,7 @@ from flask_cors import CORS
 from gnews import GNews
 import pytz
 
-nltk.download("vader_lexicon")
+
 SYDNEY_TZ = pytz.timezone("Australia/Sydney")
 
 app = Flask(__name__)
