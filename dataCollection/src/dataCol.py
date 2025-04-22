@@ -167,7 +167,11 @@ def stock_info():
             ), 403
         stock_ticker = search_ticker(company_name.strip().lower())
         if not stock_ticker:
-            return jsonify({"error": f"Could not find a stock ticker for '{company_name.strip().lower()}'."}), 404
+            return jsonify(
+                {
+                    "error": f"Could not find a stock ticker for '{company_name.strip().lower()}'."
+                }
+            ), 404
         file_path, stock_data = get_stock_data(stock_ticker, company_name, name)
         if stock_data is None:
             return jsonify(
@@ -207,10 +211,14 @@ def check_stock():
     )
     try:
         s3.head_object(Bucket=CLIENT_BUCKET_NAME1, Key=file_path)
-        return jsonify({"exists": True, "message": "Stock data exists.", "file": file_path})
+        return jsonify(
+            {"exists": True, "message": "Stock data exists.", "file": file_path}
+        )
     except ClientError as e:
-        if e.response['Error']['Code'] == "404":
-            return jsonify({"exists": False, "message": "No stock data found.", "file": file_path})
+        if e.response["Error"]["Code"] == "404":
+            return jsonify(
+                {"exists": False, "message": "No stock data found.", "file": file_path}
+            )
         return jsonify({"error": f"Error checking S3: {e}"}), 500
 
 
@@ -305,13 +313,15 @@ def fetch_company_news_df(company_name):
                 combined_text = f"{title}. {summary}"
                 sentiment = sia.polarity_scores(combined_text)["compound"]
 
-                records.append({
-                    "company_name": company_name,
-                    "article_title": title,
-                    "url": content.get("canonicalUrl", {}).get("url", ""),
-                    "published_at": pub_time.isoformat(),
-                    "sentiment_score": sentiment
-                })
+                records.append(
+                    {
+                        "company_name": company_name,
+                        "article_title": title,
+                        "url": content.get("canonicalUrl", {}).get("url", ""),
+                        "published_at": pub_time.isoformat(),
+                        "sentiment_score": sentiment,
+                    }
+                )
             except Exception:
                 continue
     except Exception:
@@ -416,5 +426,5 @@ def get_sports_news():
 
 
 if __name__ == "__main__":
-    nltk.download('vader_lexicon')
-    app.run(host='0.0.0.0', port=5001)
+    nltk.download("vader_lexicon")
+    app.run(host="0.0.0.0", port=5001)
