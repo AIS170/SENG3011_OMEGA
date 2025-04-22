@@ -91,6 +91,7 @@ def test_register_nonjson_payload(client):
     res = client.post("/register", data="notjson", content_type="text/plain")
     assert res.status_code == 400
 
+
 # ------------------ HOME ------------------
 
 
@@ -101,6 +102,7 @@ def test_home_route(client):
 
 
 REGISTERED_USER = "testuser"
+
 
 @pytest.fixture(scope="module", autouse=True)
 def ensure_test_user_registered():
@@ -126,7 +128,10 @@ def test_stock_info_missing_company_param(client):
 def test_stock_info_missing_name_param(client):
     res = client.get("/stockInfo?company=apple")
     assert res.status_code == 400 or res.status_code == 403
-    assert "username" in res.get_json()["error"] or "No active user" in res.get_json()["error"]
+    assert (
+        "username" in res.get_json()["error"]
+        or "No active user" in res.get_json()["error"]
+    )
 
 
 def test_stock_info_invalid_company_name(client):
@@ -221,7 +226,9 @@ def test_check_stock_unexpected_s3_error(client, monkeypatch):
     assert res.status_code == 500
     assert "S3 access denied during user registration check" in res.get_json()["error"]
 
+
 # ------------------ NEWS ------------------
+
 
 def test_news_getallCompanyNews_route(client):
     s3 = create_s3_client()

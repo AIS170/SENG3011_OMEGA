@@ -8,7 +8,6 @@ import re
 from datetime import datetime, timedelta, timezone
 import io
 from dateutil import parser
-import os
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from flask_cors import CORS
 from gnews import GNews
@@ -28,11 +27,12 @@ ONE_MONTH_AGO = datetime.now(timezone.utc) - timedelta(days=30)
 TODAY_STR = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 sia = SentimentIntensityAnalyzer()
 
-#removed the current user stuff
+# removed the current user stuff
 
 
 class UserAlreadyExists(Exception):
     pass
+
 
 @app.route("/register", methods=["POST"])
 def register_user():
@@ -66,14 +66,15 @@ def register_user():
                 Body=f"User: {username}\nCreated at: {datetime.now(timezone.utc).isoformat()}",
                 ContentType="text/plain",
             )
-            return jsonify({
-                "message": f"User '{username}' registered successfully in S3."
-            }), 201
+            return jsonify(
+                {"message": f"User '{username}' registered successfully in S3."}
+            ), 201
         else:
             return jsonify({"error": f"S3 access error: {str(e)}"}), 500
     except UserAlreadyExists as ue:
         return jsonify({"error": str(ue)}), 409
-    
+
+
 def is_registered_user(username):
     username = username.strip().lower()
     profile_key = f"{username}/profile.txt"
@@ -101,6 +102,7 @@ def is_registered_user(username):
             # Optional: log or handle this separately
             raise Exception("S3 access denied during user registration check.")
         raise e
+
 
 def write_to_client_s3(filename, bucketname):
     sts_client = boto3.client("sts")
@@ -161,6 +163,7 @@ def get_stock_data(stock_ticker, company, name, period="1mo"):
 def home():
     return "Welcome to the Stock Data API! Use /stockInfo?company=COMPANY_NAME to fetch stock details."
 
+
 @app.route("/stockInfo")
 def stock_info():
     try:
@@ -175,13 +178,11 @@ def stock_info():
         if not is_registered_user(name):
             return jsonify({"error": f"User '{name}' is not registered."}), 403
         name = name.strip().lower()
-        
+
         stock_ticker = search_ticker(company_name)
         if not stock_ticker:
             return jsonify(
-                {
-                    "error": f"Could not find a stock ticker for '{company_name}'."
-                }
+                {"error": f"Could not find a stock ticker for '{company_name}'."}
             ), 404
         file_path, stock_data = get_stock_data(stock_ticker, company_name, name)
         if stock_data is None:
@@ -199,6 +200,7 @@ def stock_info():
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
+
 @app.route("/check_stock")
 def check_stock():
     try:
@@ -206,7 +208,9 @@ def check_stock():
         name = request.args.get("name")
 
         if not company_name:
-            return jsonify({"error": "Please provide a company name as `company`."}), 400
+            return jsonify(
+                {"error": "Please provide a company name as `company`."}
+            ), 400
         if not name:
             return jsonify({"error": "Please provide your username as `name`."}), 400
 
@@ -230,19 +234,15 @@ def check_stock():
         )
 
         s3.head_object(Bucket=CLIENT_BUCKET_NAME1, Key=file_path)
-        return jsonify({
-            "exists": True,
-            "message": "Stock data exists.",
-            "file": file_path
-        })
+        return jsonify(
+            {"exists": True, "message": "Stock data exists.", "file": file_path}
+        )
 
     except ClientError as e:
         if e.response["Error"]["Code"] == "404":
-            return jsonify({
-                "exists": False,
-                "message": "No stock data found.",
-                "file": file_path
-            })
+            return jsonify(
+                {"exists": False, "message": "No stock data found.", "file": file_path}
+            )
         return jsonify({"error": f"Error checking S3: {str(e)}"}), 500
 
     except Exception as e:
