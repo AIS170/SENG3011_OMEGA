@@ -29,30 +29,19 @@ TODAY_STR = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 ACTIVE_USER_FILE = "active_user.txt"
 sia = SentimentIntensityAnalyzer()
 
-
-def set_current_user(username):
-    with open(ACTIVE_USER_FILE, "w") as f:
-        f.write(username.strip().lower())
-
-
-def get_current_user():
-    if os.path.exists(ACTIVE_USER_FILE):
-        with open(ACTIVE_USER_FILE, "r") as f:
-            return f.read().strip()
-    return None
+#removed the current user stuff
 
 
 class UserAlreadyExists(Exception):
     pass
 
-
 @app.route("/register", methods=["POST"])
 def register_user():
-    data = request.get_json()
-    if not data or "username" not in data:
-        return jsonify({"error": "Username is required."}), 400
+    username = request.args.get("name")
+    if not username:
+        return jsonify({"error": "Username is required as query param `name`."}), 400
 
-    username = data["username"].strip().lower()
+    username = username.strip().lower()
     profile_key = f"{username}/profile.txt"
 
     sts_client = boto3.client("sts")
@@ -78,17 +67,13 @@ def register_user():
                 Body=f"User: {username}\nCreated at: {datetime.now(timezone.utc).isoformat()}",
                 ContentType="text/plain",
             )
-            set_current_user(username)
-            return jsonify(
-                {
-                    "message": f"User '{username}' registered and set as current session user."
-                }
-            ), 201
+            return jsonify({
+                "message": f"User '{username}' registered successfully in S3."
+            }), 201
         else:
             return jsonify({"error": f"S3 access error: {str(e)}"}), 500
     except UserAlreadyExists as ue:
         return jsonify({"error": str(ue)}), 409
-
 
 def write_to_client_s3(filename, bucketname):
     sts_client = boto3.client("sts")
