@@ -29,6 +29,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest coverage boto3 requests junit2html
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Download NLTK VADER lexicon
+      run: |
+        python3.10 -m nltk.downloader vader_lexicon
 
     - name: 🔐 Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
@@ -49,7 +52,7 @@ jobs:
       run: |
         coverage run --source . --omit=src/app.py -m pytest \
           dataCollection/Testing/unitTests.py \
-          dataCollection/Testing/ComponentTesting.py \
+          dataCollection/Testing/componentTesting.py \
           retrievalService/testing \
           --junitxml=test-results.xml
         coverage report -m --fail-under=85
@@ -60,7 +63,7 @@ jobs:
       run: |
         python3 dataCollection/src/dataCol.py &
         sleep 5
-        pytest dataCollection/Testing/ContractTesting.py -m integration --disable-warnings
+        pytest dataCollection/Testing/contractTesting.py -m integration --disable-warnings
 
     - name: Install JUnit2HTML
       run: pip install junit2html

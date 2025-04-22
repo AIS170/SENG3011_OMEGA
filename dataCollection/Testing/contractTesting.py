@@ -39,13 +39,15 @@ def test_contract_end_to_end():
     try:
         # Step 0: Register the user
         print("[0] Registering user...")
-        r0 = requests.post(f"{BASE_URL}/register", json={"username": name})
+        r0 = requests.post(f"{BASE_URL}/register", params={"name": name})
         assert r0.status_code in [201, 409]
         print("✓ User registered")
 
         # Step 1: Fetch and upload stock data
         print("[1] Requesting /stockInfo to fetch and upload stock data")
-        r1 = requests.get(f"{BASE_URL}/stockInfo", params={"company": company})
+        r1 = requests.get(
+            f"{BASE_URL}/stockInfo", params={"company": company, "name": name}
+        )
         assert r1.status_code == 200
         file_key = r1.json()["file"]
         assert file_key.startswith(f"{name}#{company}")
@@ -53,14 +55,16 @@ def test_contract_end_to_end():
 
         # Step 2: Verify stock file exists
         print("[2] Verifying stock file exists via /check_stock")
-        r2 = requests.get(f"{BASE_URL}/check_stock", params={"company": company})
+        r2 = requests.get(
+            f"{BASE_URL}/check_stock", params={"company": company, "name": name}
+        )
         assert r2.status_code == 200
         assert r2.json()["exists"] is True
         print("✓ Stock file found in S3")
 
         # Step 3: Trigger news fetch
         print("[3] Calling /news to fetch latest news")
-        r3 = requests.get(f"{BASE_URL}/news")
+        r3 = requests.get(f"{BASE_URL}/news", params={"name": name})
         assert r3.status_code == 200
         files_added = r3.json()["files_added"]
         assert isinstance(files_added, int)
@@ -72,7 +76,7 @@ def test_contract_end_to_end():
         assert head["ResponseMetadata"]["HTTPStatusCode"] == 200
         print("✓ News file found in S3:", news_key)
 
-        print("\n✅ Contract test passed: All systems integrated and functioning.")
+        print("\nContract test passed: All systems integrated and functioning.")
 
     finally:
         # Step 5: Cleanup all S3 files including profile

@@ -25,7 +25,7 @@ from src.dataCol import (
 
 def test_search_ticker_cases():
     # Valid ticker
-    assert search_ticker("apple") == "AAPL"
+    assert search_ticker("Apple") == "AAPL"
 
     # Invalid tickers
     assert search_ticker("nonexistentcompanyxyz") is None
@@ -183,7 +183,7 @@ def test_fetch_company_news_df_recent_articles():
         yf.Ticker = MockTicker
         df_recent = fetch_company_news_df("apple")
         print(f"Recent news check (should include article): {df_recent}")
-        assert not df_recent.empty  # ✅ This should now pass
+        assert not df_recent.empty  # This should now pass
         assert "article_title" in df_recent.columns
         assert df_recent["article_title"].iloc[0] == "Recent News"
     finally:
