@@ -5,7 +5,7 @@ import csv
 
 
 def validateDataSrc(dataSrc):
-    validDataSources = set(["finance", "news"])
+    validDataSources = set(["finance", "news", "sport"])
     if dataSrc not in validDataSources:
         raise InvalidDataKey(f"data type {dataSrc} is not valid - valid types are {validDataSources}")
     else:
@@ -15,28 +15,32 @@ def validateDataSrc(dataSrc):
 def getKeyToTableNameMap():
     return {
         "finance": "seng3011-omega-25t1-testing-bucket",
-        "news": "seng3011-omega-news-data"
+        "news": "seng3011-omega-news-data",
+        "sport": "seng3011-omega-sports-data"
     }
 
 
 def getKeyToDataSourceMap():
     return {
         "finance": "yahoo_finance",
-        "news": "yahoo_news"
+        "news": "yahoo_news",
+        "sport": "yahoo_sport"
     }
 
 
 def getKeyToDatasetTypeMap():
     return {
         "finance": "Daily stock data",
-        "news": "Financial news"
+        "news": "Financial news",
+        "sport": "Sports news"
     }
 
 
 def getEventType(dataSrc):
     map = {
         "finance": "stock-ohl",
-        "news": "stock-news"
+        "news": "stock-news",
+        "sport": "sport-results"
     }
 
     return map[dataSrc]
@@ -45,7 +49,8 @@ def getEventType(dataSrc):
 def getS3FileName(username, dataType, stockname, date):
     fileFormat = {
         "finance": f"{username}#{stockname}_stock_data.csv",
-        "news": f"{username}_{stockname}_{date}_news.csv"
+        "news": f"{username}_{stockname}_{date}_news.csv",
+        "sport": f"{username}#{stockname}_{date}_sport.csv"         # TODO GET THIS CHECKED WITH RAKSHIL
     }
 
     return fileFormat[dataType]
@@ -81,7 +86,8 @@ def adageFormatter(s3BucketName: str, stockName: str, content: str, data_type: s
 def createDynamoDBAttributeMap(dataSrc, stockname, line):
     attributes = {
         "finance": [("close", "Close")],
-        "news": [("url", "url"), ("sentiment_score", "sentiment_score")]
+        "news": [("url", "url"), ("sentiment_score", "sentiment_score")],
+        "sport": None       # TODO: Figure this out using an example csv file from Rakshil
     }
 
     attributeMap = {}
@@ -97,7 +103,8 @@ def createDynamoDBAttributeMap(dataSrc, stockname, line):
 def GettingCSVDateColName(dataSrc):
     keyToDateColumn = {
         "finance": "Date",
-        "news": "published_at"
+        "news": "published_at",
+        "sport": None           # TODO: Figure this out using an example csv file from
     }
 
     return keyToDateColumn[dataSrc]
