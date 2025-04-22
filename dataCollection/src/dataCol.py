@@ -175,7 +175,7 @@ def stock_info():
             return jsonify(
                 {"error": "No active user found. Please register first."}
             ), 403
-        stock_ticker = search_ticker(company_name.strip().lower())
+        stock_ticker = search_ticker(company_name)
         if not stock_ticker:
             return jsonify(
                 {
