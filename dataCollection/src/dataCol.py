@@ -187,7 +187,7 @@ def stock_info():
         file_path, stock_data = get_stock_data(stock_ticker, company_name, name)
         if stock_data is None:
             return jsonify(
-                {"error": f"Stock data for '{stock_ticker}' not found or invalid."}
+                {"error": f"Stock data for '{company_name}' not found or invalid."}
             ), 404
         return jsonify(
             {
