@@ -10,7 +10,9 @@ from ..implementation.RetrievalInterface import RetrievalInterface
 
 # moto uses depreacted datetime.datetime.utcnow which causes a Deprecation Warning
 # Therefore, I am choosing to hide this warning
-@pytest.mark.filterwarnings(r"ignore:datetime.datetime.utcnow\(\) is deprecated:DeprecationWarning")
+@pytest.mark.filterwarnings(
+    r"ignore:datetime.datetime.utcnow\(\) is deprecated:DeprecationWarning"
+)
 class TestPullFromS3:
     @mock_aws
     # successfully pull a file
@@ -35,7 +37,9 @@ class TestPullFromS3:
 
         retrievalInterface = RetrievalInterface()
         with pytest.raises(s3_mock.exceptions.NoSuchKey):
-            retrievalInterface.pull("seng3011-omega-25t1-testing-bucket", "non-existent-file")
+            retrievalInterface.pull(
+                "seng3011-omega-25t1-testing-bucket", "non-existent-file"
+            )
 
     @mock_aws
     def test_pull_nonexistent_bucket(self, s3_mock):
