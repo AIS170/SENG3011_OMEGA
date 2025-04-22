@@ -36,7 +36,7 @@ DYNAMO_DB_NAME = "seng3011-test-dynamodb"
 def register():
     username = request.get_json()["username"]
     retrievalInterface = RetrievalInterface()
-
+    username = username.strip().lower()
     try:
         retrievalInterface.register(username, DYNAMO_DB_NAME)
         return json.dumps({"Success": f"User {username} registered successfully"}), 200
@@ -53,6 +53,7 @@ def register():
 
 @app.route("/v1/retrieve/<username>/<stockname>/", methods=["GET"])
 def retrieve(username: str, stockname: str):
+    username = username.strip().lower()
     retrievalInterface = RetrievalInterface()
     filenameS3 = f"{username}#{stockname}_stock_data.csv"  # need to think about Rakshil's file formatting here
     try:
@@ -133,6 +134,7 @@ def retrieve(username: str, stockname: str):
 def delete(username: str, filename: str):
     retrievalInterface = RetrievalInterface()
     try:
+        username = username.strip().lower()
         # delete from dynamodb
         retrievalInterface.deleteFromDynamo(filename, username, DYNAMO_DB_NAME)
         return json.dumps({"Success": f"Deleted {filename}"})
@@ -158,6 +160,7 @@ def delete(username: str, filename: str):
 def getAll(username: str):
     retrievalInterface = RetrievalInterface()
     try:
+        username = username.strip().lower()
         return json.dumps(
             {"Success": retrievalInterface.listUserFiles(username, DYNAMO_DB_NAME)}
         )
@@ -177,6 +180,7 @@ def getAll(username: str):
 def retrieveV2(username, data_type, stockname):
     try:
         validateDataSrc(data_type)
+        username = username.strip().lower()
         retrievalInterface = RetrievalInterface()
         s3BucketName = getTableNameFromKey(data_type)
         date = request.args.get("date")
