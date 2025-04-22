@@ -45,7 +45,9 @@ def test_contract_end_to_end():
 
         # Step 1: Fetch and upload stock data
         print("[1] Requesting /stockInfo to fetch and upload stock data")
-        r1 = requests.get(f"{BASE_URL}/stockInfo", params={"company": company, "name": name})
+        r1 = requests.get(
+            f"{BASE_URL}/stockInfo", params={"company": company, "name": name}
+        )
         assert r1.status_code == 200
         file_key = r1.json()["file"]
         assert file_key.startswith(f"{name}#{company}")
@@ -53,7 +55,9 @@ def test_contract_end_to_end():
 
         # Step 2: Verify stock file exists
         print("[2] Verifying stock file exists via /check_stock")
-        r2 = requests.get(f"{BASE_URL}/check_stock", params={"company": company, "name": name})
+        r2 = requests.get(
+            f"{BASE_URL}/check_stock", params={"company": company, "name": name}
+        )
         assert r2.status_code == 200
         assert r2.json()["exists"] is True
         print("✓ Stock file found in S3")
