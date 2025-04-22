@@ -125,7 +125,7 @@ def get_stock_data(stock_ticker, company, name, period="1mo"):
         hist = hist[["Open", "High", "Low", "Close", "Volume", "Dividends", "Stock Splits"]]
         hist.reset_index(inplace=True)
         hist["Date"] = hist["Date"].dt.strftime("%Y-%m-%d")
-        file_path = f"{name}#{company}_stock_data.csv"
+        file_path = f"{name.strip().lower()}#{company.strip().lower()}_stock_data.csv"
         hist.to_csv(file_path, index=False)
         write_to_client_s3(file_path, CLIENT_BUCKET_NAME1)
         return file_path, hist.to_dict(orient="records")
@@ -148,7 +148,7 @@ def stock_info():
             return jsonify({"error": "No active user found. Please register first."}), 403
         stock_ticker = search_ticker(company_name.strip().lower())
         if not stock_ticker:
-            return jsonify({"error": f"Could not find a stock ticker for '{company_name}'."}), 404
+            return jsonify({"error": f"Could not find a stock ticker for '{company_name.strip().lower()}'."}), 404
         file_path, stock_data = get_stock_data(stock_ticker, company_name, name)
         if stock_data is None:
             return jsonify({"error": f"Stock data for '{stock_ticker}' not found or invalid."}), 404
@@ -169,7 +169,7 @@ def check_stock():
         return jsonify({"error": "Please provide a company name."}), 400
     if not name:
         return jsonify({"error": "No active user found. Please register first."}), 403
-    file_path = f"{name}#{company_name.strip().lower()}_stock_data.csv"
+    file_path = f"{name.strip().lower()}#{company_name.strip().lower()}_stock_data.csv"
     sts_client = boto3.client('sts')
     assumed_role_object = sts_client.assume_role(RoleArn=CLIENT_ROLE_ARN, RoleSessionName="AssumeRoleSession1")
     credentials = assumed_role_object['Credentials']
@@ -307,20 +307,19 @@ def getallCompanyNews():
     name = get_current_user()
     if not name:
         return jsonify({"error": "No active user found. Please register first."}), 403
-
     companies = get_stocks_for_news(name)
     files_added = 0
 
     for company in companies:
         try:
-            latest = get_latest_news_date_from_s3(company, name)
+            latest = get_latest_news_date_from_s3(company.strip().lower(), name)
             if not latest or latest < ONE_MONTH_AGO:
-                df = fetch_company_news_df(company)
+                df = fetch_company_news_df(company.strip().lower())
                 if not df.empty:
-                    upload_csv_to_s3(name, company, df)
+                    upload_csv_to_s3(name, company.strip().lower(), df)
                     files_added += 1
         except Exception as e:
-            print(f"Error with {company}: {e}")
+            print(f"Error with {company.strip().lower()}: {e}")
 
     return jsonify({
         "status": "complete",
