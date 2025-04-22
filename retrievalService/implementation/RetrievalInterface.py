@@ -16,15 +16,17 @@ from RetrievalMicroserviceHelpers import createDynamoDBContentList
 
 
 class RetrievalInterface:
-
     def register(self, username, tableName) -> str:
-
         dynamodb = boto3.client("dynamodb", region_name="ap-southeast-2")
         try:
-            response = dynamodb.get_item(TableName=tableName, Key={"username": {"S": username}})
+            response = dynamodb.get_item(
+                TableName=tableName, Key={"username": {"S": username}}
+            )
 
             if response.get("Item"):
-                raise UserAlreadyExists("User already exists, cannot register this username")
+                raise UserAlreadyExists(
+                    "User already exists, cannot register this username"
+                )
 
             response = dynamodb.put_item(
                 TableName=tableName,
@@ -37,7 +39,7 @@ class RetrievalInterface:
         except ClientError as e:
             sys.stderr.write(
                 f"""(Retrieval Interface.register) Client (DynamoDB)
-                Error: {e.response['Error']['Code']}\n"""
+                Error: {e.response["Error"]["Code"]}\n"""
             )
             raise
 
@@ -56,7 +58,7 @@ class RetrievalInterface:
         except ClientError as e:
             sys.stderr.write(
                 f"""(Retrieval Interface.deleteFromDynamo) Client (DynamoDB)
-                Error: {e.response['Error']['Code']}\n"""
+                Error: {e.response["Error"]["Code"]}\n"""
             )
             raise
 
@@ -72,21 +74,24 @@ class RetrievalInterface:
         dynamodb = boto3.client("dynamodb", region_name="ap-southeast-2")
 
         try:
-            response = dynamodb.get_item(TableName=tableName, Key={"username": {"S": username}})
+            response = dynamodb.get_item(
+                TableName=tableName, Key={"username": {"S": username}}
+            )
 
             userInfo = response.get("Item")
             if not userInfo:
                 raise UserNotFound("Username not found - ensure you have registered")
 
             deserializer = TypeDeserializer()
-            unmarshalledItem = {k: deserializer.deserialize(v) for k, v in response["Item"].items()}
+            unmarshalledItem = {
+                k: deserializer.deserialize(v) for k, v in response["Item"].items()
+            }
 
             files = unmarshalledItem.get("retrievedFiles")
 
             for i, f in enumerate(files):
                 file = f.get("filename")
                 if file == fileName:
-
                     return (True, f.get("content"), i)
 
             return (False, None, -1)
@@ -94,12 +99,14 @@ class RetrievalInterface:
         except ClientError as e:
             sys.stderr.write(
                 f"""(Retrieval Interface.deleteFromDynamo) Client (DynamoDB)
-                Error: {e.response['Error']['Code']}\n"""
+                Error: {e.response["Error"]["Code"]}\n"""
             )
             raise
 
     # Pushes a file and its content to dynamoDB
-    def pushToDynamo(self, fileName: str, fileContent: str, username: str, tableName: str):
+    def pushToDynamo(
+        self, fileName: str, fileContent: str, username: str, tableName: str
+    ):
         dynamodb = boto3.client("dynamodb", region_name="ap-southeast-2")
 
         reader = csv.DictReader(fileContent.split("\n"), delimiter=",")
@@ -115,7 +122,12 @@ class RetrievalInterface:
             contentList.append(
                 {
                     "M": {
-                        "attribute": {"M": {"close": {"S": closeVal}, "stock_name": {"S": fileName}}},
+                        "attribute": {
+                            "M": {
+                                "close": {"S": closeVal},
+                                "stock_name": {"S": fileName},
+                            }
+                        },
                         "event-type": {"S": "stock-ohlc"},
                         "time_object": {
                             "M": {
@@ -130,7 +142,9 @@ class RetrievalInterface:
             )
 
         new_object = {
-            "stockName": {"S": fileName.removesuffix("_stock_data.csv")},  # will change depending on what Rakshil did
+            "stockName": {
+                "S": fileName.removesuffix("_stock_data.csv")
+            },  # will change depending on what Rakshil did
             "content": {"L": contentList},
             "filename": {"S": fileName},
         }
@@ -138,14 +152,19 @@ class RetrievalInterface:
         try:
             found, file, index = self.getFileFromDynamo(fileName, username, tableName)
             if found:
-                raise UserHasFile("User already have a file with this name; refusing to push it again")
+                raise UserHasFile(
+                    "User already have a file with this name; refusing to push it again"
+                )
 
             dynamodb.update_item(
                 TableName=tableName,
                 Key={"username": {"S": username}},
                 UpdateExpression="""SET retrievedFiles =
                     list_append(if_not_exists(retrievedFiles, :empty_list), :new_values)""",
-                ExpressionAttributeValues={":new_values": {"L": [{"M": new_object}]}, ":empty_list": {"L": []}},
+                ExpressionAttributeValues={
+                    ":new_values": {"L": [{"M": new_object}]},
+                    ":empty_list": {"L": []},
+                },
                 ReturnValues="UPDATED_NEW",
             )
 
@@ -153,11 +172,13 @@ class RetrievalInterface:
         except ClientError as e:
             sys.stderr.write(
                 f"""(RetrievalInterface.pushToDynamo) Client (DynamoDB)
-                Error: {e.response['Error']['Code']}\n"""
+                Error: {e.response["Error"]["Code"]}\n"""
             )
             raise
         except Exception as e:
-            sys.stderr.write(f"(RetrievalInterface.pushToDynamo) General Exception {e}\n")
+            sys.stderr.write(
+                f"(RetrievalInterface.pushToDynamo) General Exception {e}\n"
+            )
             raise
 
     def deleteOne(self, bucketName: str, fileNameOnS3: str) -> bool:
@@ -173,7 +194,9 @@ class RetrievalInterface:
 
         found, file, fileIndex = self.getFileFromDynamo(fileName, username, tableName)
         if not found:
-            raise FileNotFoundError("Attempting to delete a file that you have never retrieved")
+            raise FileNotFoundError(
+                "Attempting to delete a file that you have never retrieved"
+            )
 
         try:
             dynamodb.update_item(
@@ -187,7 +210,7 @@ class RetrievalInterface:
         except ClientError as e:
             sys.stderr.write(
                 f"""(Retrieval Interface.deleteFromDynamo) Client (DynamoDB)
-                Error: {e.response['Error']['Code']}\n"""
+                Error: {e.response["Error"]["Code"]}\n"""
             )
             raise
         except Exception:
@@ -196,15 +219,24 @@ class RetrievalInterface:
     def listUserFiles(self, username: str, tableName: str):
         dynamodb = boto3.client("dynamodb", region_name="ap-southeast-2")
         try:
-            response = dynamodb.get_item(TableName=tableName, Key={"username": {"S": username}})
+            response = dynamodb.get_item(
+                TableName=tableName, Key={"username": {"S": username}}
+            )
 
             if response.get("Item", None) is None:
-                raise UserNotFound("User does not seem to exist, ensure you have registered")
+                raise UserNotFound(
+                    "User does not seem to exist, ensure you have registered"
+                )
 
             deserializer = TypeDeserializer()
-            unmarshalledItem = {k: deserializer.deserialize(v) for k, v in response["Item"].items()}
+            unmarshalledItem = {
+                k: deserializer.deserialize(v) for k, v in response["Item"].items()
+            }
 
-            return [stock.get("filename") for stock in unmarshalledItem.get("retrievedFiles")]
+            return [
+                stock.get("filename")
+                for stock in unmarshalledItem.get("retrievedFiles")
+            ]
 
         except Exception as e:
             sys.stderr.write(
@@ -213,10 +245,17 @@ class RetrievalInterface:
             )
             raise
 
-    def pushToDynamoV2(self, data_src: str, stockName: str, fileContent: str, username: str, tableName: str):
-        '''Redoing the push method to dynamodb to account for having different data types (finance and news at
+    def pushToDynamoV2(
+        self,
+        data_src: str,
+        stockName: str,
+        fileContent: str,
+        username: str,
+        tableName: str,
+    ):
+        """Redoing the push method to dynamodb to account for having different data types (finance and news at
         the moment). The key difference will be the filename that is associated with a pushed file will include
-        the type of data. The format of the filename will be <data_type>_<stock_name>.'''
+        the type of data. The format of the filename will be <data_type>_<stock_name>."""
 
         dynamodb = boto3.client("dynamodb", region_name="ap-southeast-2")
 
@@ -233,14 +272,19 @@ class RetrievalInterface:
         try:
             found, file, index = self.getFileFromDynamo(fileName, username, tableName)
             if found:
-                raise UserHasFile("User already have a file with this name; refusing to push it again")
+                raise UserHasFile(
+                    "User already have a file with this name; refusing to push it again"
+                )
 
             dynamodb.update_item(
                 TableName=tableName,
                 Key={"username": {"S": username}},
                 UpdateExpression="""SET retrievedFiles =
                     list_append(if_not_exists(retrievedFiles, :empty_list), :new_values)""",
-                ExpressionAttributeValues={":new_values": {"L": [{"M": new_object}]}, ":empty_list": {"L": []}},
+                ExpressionAttributeValues={
+                    ":new_values": {"L": [{"M": new_object}]},
+                    ":empty_list": {"L": []},
+                },
                 ReturnValues="UPDATED_NEW",
             )
 
@@ -248,9 +292,11 @@ class RetrievalInterface:
         except ClientError as e:
             sys.stderr.write(
                 f"""(RetrievalInterface.pushToDynamo) Client (DynamoDB)
-                Error: {e.response['Error']['Code']}\n"""
+                Error: {e.response["Error"]["Code"]}\n"""
             )
             raise
         except Exception as e:
-            sys.stderr.write(f"(RetrievalInterface.pushToDynamo) General Exception {e}\n")
+            sys.stderr.write(
+                f"(RetrievalInterface.pushToDynamo) General Exception {e}\n"
+            )
             raise

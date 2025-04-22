@@ -7,7 +7,9 @@ import csv
 def validateDataSrc(dataSrc):
     validDataSources = set(["finance", "news", "sport"])
     if dataSrc not in validDataSources:
-        raise InvalidDataKey(f"data type {dataSrc} is not valid - valid types are {validDataSources}")
+        raise InvalidDataKey(
+            f"data type {dataSrc} is not valid - valid types are {validDataSources}"
+        )
     else:
         return True
 
@@ -39,8 +41,7 @@ def getKeyToDatasetTypeMap():
 def getEventType(dataSrc):
     map = {
         "finance": "stock-ohl",
-        "news": "stock-news",
-        "sport": "sport-results"
+        "news": "stock-news"
     }
 
     return map[dataSrc]
@@ -57,7 +58,6 @@ def getS3FileName(username, dataType, stockname, date):
 
 
 def getTableNameFromKey(key: str):
-
     keyToTableNameMap = getKeyToTableNameMap()
     tableName = keyToTableNameMap.get(key, None)
 
@@ -65,7 +65,6 @@ def getTableNameFromKey(key: str):
 
 
 def adageFormatter(s3BucketName: str, stockName: str, content: str, data_type: str):
-
     dataSrc = getKeyToDataSourceMap().get(data_type, None)
     datasetType = getKeyToDatasetTypeMap().get(data_type, None)
 
@@ -106,6 +105,7 @@ def GettingCSVDateColName(dataSrc):
         "news": "published_at",
         "sport": None           # TODO: Figure this out using an example csv file from
     }
+    keyToDateColumn = {"finance": "Date", "news": "published_at"}
 
     return keyToDateColumn[dataSrc]
 
@@ -115,7 +115,6 @@ def createDynamoDBContentList(dataSrc, stockname, fileContent):
     reader = csv.DictReader(fileContent.split("\n"), delimiter=",")
     contentList = []
     for line in list(reader):
-
         # if we have a blank line (especially at the end of a file)
         if line == "":
             continue
@@ -125,7 +124,9 @@ def createDynamoDBContentList(dataSrc, stockname, fileContent):
         contentList.append(
             {
                 "M": {
-                    "attribute": {"M": createDynamoDBAttributeMap(dataSrc, stockname, line)},
+                    "attribute": {
+                        "M": createDynamoDBAttributeMap(dataSrc, stockname, line)
+                    },
                     "event-type": {"S": f"{(getEventType(dataSrc))}"},
                     "time_object": {
                         "M": {

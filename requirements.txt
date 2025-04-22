@@ -5,6 +5,11 @@ coverage
 flask
 yfinance
 pandas
+numpy
 requests
 pytest-mock
+nltk
 flask-cors
+ruff
+gnews
+pytz
