@@ -40,7 +40,7 @@ def getKeyToDatasetTypeMap():
 
 def getEventType(dataSrc):
     map = {
-        "finance": "stock-ohl",
+        "finance": "stock-ohlc",
         "news": "stock-news"
     }
 
