@@ -9,7 +9,6 @@ from datetime import datetime, timedelta, timezone
 import io
 from dateutil import parser
 import os
-import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from flask_cors import CORS
 from gnews import GNews
@@ -423,5 +422,4 @@ def get_sports_news():
 
 
 if __name__ == "__main__":
-    nltk.download("vader_lexicon")
     app.run(host="0.0.0.0", port=5001)

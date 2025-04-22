@@ -29,6 +29,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest coverage boto3 requests junit2html
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Download NLTK VADER lexicon
+      run: |
+        python -m nltk.downloader vader_lexicon
 
     - name: 🔐 Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
