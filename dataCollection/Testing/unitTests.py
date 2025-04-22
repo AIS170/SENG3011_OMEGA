@@ -2,7 +2,8 @@ import pytest
 import pandas as pd
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from datetime import datetime, timedelta, timezone
 import boto3
 import yfinance as yf
@@ -15,11 +16,12 @@ from src.dataCol import (
     upload_csv_to_s3,
     CLIENT_BUCKET_NAME1,
     CLIENT_BUCKET_NAME2,
-    CLIENT_ROLE_ARN
+    CLIENT_ROLE_ARN,
 )
 
 
 # -------------------- COVERAGE-FOCUSED FUNCTION TESTS --------------------
+
 
 def test_search_ticker_cases():
     # Valid ticker
@@ -37,6 +39,7 @@ def test_search_ticker_cases():
 
     result = search_ticker(BadCompany())
     assert result is None
+
 
 def test_write_to_client_s3_cases():
     # Case 1: Valid file and bucket
@@ -68,6 +71,7 @@ def test_write_to_client_s3_cases():
     assert write_to_client_s3("large_file.csv", CLIENT_BUCKET_NAME1) is True
     os.remove("large_file.csv")
 
+
 def test_get_stock_data_cases():
     # Valid ticker
     path, data = get_stock_data("AAPL", "apple", "user")
@@ -87,11 +91,13 @@ def test_get_stock_data_cases():
     result = get_stock_data(BadTicker(), "co", "user")
     assert result == (None, None)
 
+
 def test_fetch_company_news_df_valid():
     # We just call the function and check if we get a DataFrame
     df = fetch_company_news_df("apple")
     print(f"DataFrame check for valid company: {df}")  # Proof print
     assert isinstance(df, pd.DataFrame)
+
 
 def test_fetch_company_news_df_empty():
     # Checking what happens when we try to fetch news for a non-existing company. It should return an empty DataFrame.
@@ -100,13 +106,20 @@ def test_fetch_company_news_df_empty():
     assert isinstance(df_empty, pd.DataFrame)
     assert df_empty.empty
 
+
 def test_fetch_company_news_df_sentiment_and_timestamp():
     # We get the news for a valid company (apple) and verify if sentiment_score is a float and the timestamp is valid.
     df_check = fetch_company_news_df("apple")
     print(f"Sentiment and timestamp check for apple: {df_check}")  # Proof print
     if not df_check.empty:
         assert df_check["sentiment_score"].dtype == float
-        expected_cols = ["company_name", "article_title", "url", "published_at", "sentiment_score"]
+        expected_cols = [
+            "company_name",
+            "article_title",
+            "url",
+            "published_at",
+            "sentiment_score",
+        ]
         for col in expected_cols:
             assert col in df_check.columns
         for val in df_check["published_at"]:
@@ -114,19 +127,24 @@ def test_fetch_company_news_df_sentiment_and_timestamp():
             assert isinstance(dt, datetime)
             assert dt >= datetime.now(dt.tzinfo) - timedelta(days=30)
 
+
 def test_fetch_company_news_df_old_articles():
     # Simulate news that's older than 30 days and check that it gets skipped.
     class OldNews:
         @property
         def news(self):
-            return [{
-                "providerPublishTime": (datetime.now() - timedelta(days=31)).timestamp(),  # older than 30 days
-                "title": "Old News",
-                "content": "Some content",
-                "publisher": "Some Source",
-                "link": "http://example.com"
-            }]
-    
+            return [
+                {
+                    "providerPublishTime": (
+                        datetime.now() - timedelta(days=31)
+                    ).timestamp(),  # older than 30 days
+                    "title": "Old News",
+                    "content": "Some content",
+                    "publisher": "Some Source",
+                    "link": "http://example.com",
+                }
+            ]
+
     # Test old article should be skipped
     original_ticker = yf.Ticker
     try:
@@ -135,7 +153,7 @@ def test_fetch_company_news_df_old_articles():
         print(f"Old news check (should be empty): {df_old}")  # Proof print
         assert df_old.empty  # It should be skipped, so the DataFrame should be empty
     finally:
-    # Restoring the original `yf.Ticker` to ensure subsequent tests use the real Yahoo Finance API.
+        # Restoring the original `yf.Ticker` to ensure subsequent tests use the real Yahoo Finance API.
         yf.Ticker = original_ticker
 
 
@@ -147,16 +165,18 @@ def test_fetch_company_news_df_recent_articles():
     # Simulate recent news and check if it’s included in the DataFrame
     class MockTicker:
         def __init__(self, *_):
-            self.news = [{
-                "content": {
-                    "pubDate": (datetime.now() - timedelta(days=5)).isoformat(),
-                    "title": "Recent News",
-                    "summary": "Some recent content",
-                    "provider": {"displayName": "Some Source"},
-                    "canonicalUrl": {"url": "http://example.com"}
+            self.news = [
+                {
+                    "content": {
+                        "pubDate": (datetime.now() - timedelta(days=5)).isoformat(),
+                        "title": "Recent News",
+                        "summary": "Some recent content",
+                        "provider": {"displayName": "Some Source"},
+                        "canonicalUrl": {"url": "http://example.com"},
+                    }
                 }
-            }]
-    
+            ]
+
     original_ticker = yf.Ticker
     try:
         # Patch yf.Ticker to return our mock object
@@ -169,6 +189,7 @@ def test_fetch_company_news_df_recent_articles():
     finally:
         yf.Ticker = original_ticker  # Restore original
 
+
 def test_fetch_company_news_df_broken_news_parsing():
     # Force error in parsing logic by returning an invalid timestamp
     class BrokenTicker:
@@ -179,13 +200,13 @@ def test_fetch_company_news_df_broken_news_parsing():
     orig_search = search_ticker
     orig_ticker = yf.Ticker
     try:
-        globals()['search_ticker'] = lambda _: "BROKEN"
+        globals()["search_ticker"] = lambda _: "BROKEN"
         yf.Ticker = lambda _: BrokenTicker()
         df_broken = fetch_company_news_df("apple")
         print(f"Broken news parsing check: {df_broken}")  # Proof print
         assert isinstance(df_broken, pd.DataFrame)
     finally:
-        globals()['search_ticker'] = orig_search
+        globals()["search_ticker"] = orig_search
         yf.Ticker = orig_ticker
 
 
@@ -202,33 +223,34 @@ def test_fetch_company_news_df_exception_handling():
     try:
         # Simulate the broken news scenario
         yf.Ticker = lambda _: BrokenNewsItem()
-        
+
         # Call the function — it should catch and log the exception
         df = fetch_company_news_df("apple")
-        
+
         # Ensure the result is still a DataFrame, even though an exception was raised
         assert isinstance(df, pd.DataFrame)
         assert df.empty  # Since we simulated the exception, it should be empty
-        
+
     finally:
         # Restore the original Ticker function after the test
         yf.Ticker = original_ticker
 
 
 def create_s3_client():
-    sts_client = boto3.client('sts')
+    sts_client = boto3.client("sts")
     assumed = sts_client.assume_role(
-        RoleArn=CLIENT_ROLE_ARN,
-        RoleSessionName="AssumeRoleSession1"
+        RoleArn=CLIENT_ROLE_ARN, RoleSessionName="AssumeRoleSession1"
     )
-    creds = assumed['Credentials']
+    creds = assumed["Credentials"]
     return boto3.client(
-        's3',
-        aws_access_key_id=creds['AccessKeyId'],
-        aws_secret_access_key=creds['SecretAccessKey'],
-        aws_session_token=creds['SessionToken'],
-        region_name="ap-southeast-2"
+        "s3",
+        aws_access_key_id=creds["AccessKeyId"],
+        aws_secret_access_key=creds["SecretAccessKey"],
+        aws_session_token=creds["SessionToken"],
+        region_name="ap-southeast-2",
     )
+
+
 # The actual test function
 def test_get_stocks_for_news_with_real_s3():
     # Create an S3 client using the assumed role credentials
@@ -243,23 +265,43 @@ def test_get_stocks_for_news_with_real_s3():
 
     # Create test files in the S3 bucket
     print("Uploading test files to the S3 bucket...")
-    s3.put_object(Bucket=CLIENT_BUCKET_NAME1, Key="testuser#apple_stock_data.csv", Body="dummy data")
-    s3.put_object(Bucket=CLIENT_BUCKET_NAME1, Key="testuser#banana_stock_data.csv", Body="dummy data")
-    s3.put_object(Bucket=CLIENT_BUCKET_NAME1, Key="otheruser#orange_stock_data.csv", Body="dummy data")
-    s3.put_object(Bucket=CLIENT_BUCKET_NAME1, Key="testuser#grape_stock_data.csv", Body="dummy data")
-    s3.put_object(Bucket=CLIENT_BUCKET_NAME1, Key="otheruser#ignore.csv", Body="dummy data")
+    s3.put_object(
+        Bucket=CLIENT_BUCKET_NAME1,
+        Key="testuser#apple_stock_data.csv",
+        Body="dummy data",
+    )
+    s3.put_object(
+        Bucket=CLIENT_BUCKET_NAME1,
+        Key="testuser#banana_stock_data.csv",
+        Body="dummy data",
+    )
+    s3.put_object(
+        Bucket=CLIENT_BUCKET_NAME1,
+        Key="otheruser#orange_stock_data.csv",
+        Body="dummy data",
+    )
+    s3.put_object(
+        Bucket=CLIENT_BUCKET_NAME1,
+        Key="testuser#grape_stock_data.csv",
+        Body="dummy data",
+    )
+    s3.put_object(
+        Bucket=CLIENT_BUCKET_NAME1, Key="otheruser#ignore.csv", Body="dummy data"
+    )
 
     # Now call the function you want to test
     print("Calling get_stocks_for_news('testuser')...")
     result = get_stocks_for_news("testuser")
-    
+
     # Check if the result is a list
     print(f"Result for 'testuser': {result}")
     assert isinstance(result, list)
     assert "apple" in result
     assert "banana" in result
     assert "grape" in result
-    assert "orange" not in result  # This should not be included as it's for a different user
+    assert (
+        "orange" not in result
+    )  # This should not be included as it's for a different user
 
     # Test edge cases for other usernames
     print("Testing with empty username...")
@@ -285,11 +327,14 @@ def test_get_stocks_for_news_with_real_s3():
     s3.delete_object(Bucket=CLIENT_BUCKET_NAME1, Key="otheruser#orange_stock_data.csv")
     s3.delete_object(Bucket=CLIENT_BUCKET_NAME1, Key="otheruser#ignore.csv")
 
-    print(f"Test completed. Files created and deleted from the {CLIENT_BUCKET_NAME1} bucket.")
-    
+    print(
+        f"Test completed. Files created and deleted from the {CLIENT_BUCKET_NAME1} bucket."
+    )
+
 
 def test_get_latest_news_date_from_s3_cases():
     from src.dataCol import get_latest_news_date_from_s3  # Adjust path if needed
+
     s3 = create_s3_client()
     username = "user"
     company = "apple"
@@ -312,12 +357,28 @@ def test_get_latest_news_date_from_s3_cases():
 
     # Upload test files for the user/company
     print("Uploading test files to the S3 bucket...")
-    s3.put_object(Bucket=CLIENT_BUCKET_NAME2, Key=f"{username}_{company}_2023-01-01_news.csv", Body="dummy data")
-    s3.put_object(Bucket=CLIENT_BUCKET_NAME2, Key=f"{username}_{company}_2023-05-10_news.csv", Body="dummy data")
-    s3.put_object(Bucket=CLIENT_BUCKET_NAME2, Key=f"{username}_{company}_2023-04-15_news.csv", Body="dummy data")
+    s3.put_object(
+        Bucket=CLIENT_BUCKET_NAME2,
+        Key=f"{username}_{company}_2023-01-01_news.csv",
+        Body="dummy data",
+    )
+    s3.put_object(
+        Bucket=CLIENT_BUCKET_NAME2,
+        Key=f"{username}_{company}_2023-05-10_news.csv",
+        Body="dummy data",
+    )
+    s3.put_object(
+        Bucket=CLIENT_BUCKET_NAME2,
+        Key=f"{username}_{company}_2023-04-15_news.csv",
+        Body="dummy data",
+    )
 
     # Also upload a file for a different company to ensure it’s ignored
-    s3.put_object(Bucket=CLIENT_BUCKET_NAME2, Key=f"{username}_banana_2023-01-01_news.csv", Body="dummy data")
+    s3.put_object(
+        Bucket=CLIENT_BUCKET_NAME2,
+        Key=f"{username}_banana_2023-01-01_news.csv",
+        Body="dummy data",
+    )
 
     # Call the function and verify result
     print(f"Calling get_latest_news_date_from_s3('{company}', '{username}')...")
@@ -335,17 +396,15 @@ def test_get_latest_news_date_from_s3_cases():
         f"{username}_{company}_2023-01-01_news.csv",
         f"{username}_{company}_2023-05-10_news.csv",
         f"{username}_{company}_2023-04-15_news.csv",
-        f"{username}_banana_2023-01-01_news.csv"
+        f"{username}_banana_2023-01-01_news.csv",
     ]
     for key in keys_to_delete:
         s3.delete_object(Bucket=CLIENT_BUCKET_NAME2, Key=key)
-    
+
+
 def test_upload_csv_to_s3_real():
     # Create dummy DataFrame
-    data = {
-        "column1": [1, 2, 3],
-        "column2": ["A", "B", "C"]
-    }
+    data = {"column1": [1, 2, 3], "column2": ["A", "B", "C"]}
     df = pd.DataFrame(data)
 
     # Capture the date string BEFORE uploading
@@ -353,7 +412,7 @@ def test_upload_csv_to_s3_real():
     key = f"user_testcompany_{upload_date_str}_news.csv"
 
     # Upload to S3
-    upload_csv_to_s3("user","testcompany", df)
+    upload_csv_to_s3("user", "testcompany", df)
 
     # Recreate S3 client
     s3 = create_s3_client()
@@ -368,7 +427,7 @@ def test_upload_csv_to_s3_real():
         assert False
 
     obj = s3.get_object(Bucket=CLIENT_BUCKET_NAME2, Key=key)
-    content = obj['Body'].read().decode('utf-8')
+    content = obj["Body"].read().decode("utf-8")
     print(f"\n S3 File Content:\n{content}")
     assert "column1" in content
     assert "A" in content
@@ -376,5 +435,3 @@ def test_upload_csv_to_s3_real():
     # Clean up after test
     s3.delete_object(Bucket=CLIENT_BUCKET_NAME2, Key=key)
     print("Cleaned up test file.")
-
-

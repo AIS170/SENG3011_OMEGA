@@ -7,7 +7,9 @@ import csv
 def validateDataSrc(dataSrc):
     validDataSources = set(["finance", "news"])
     if dataSrc not in validDataSources:
-        raise InvalidDataKey(f"data type {dataSrc} is not valid - valid types are {validDataSources}")
+        raise InvalidDataKey(
+            f"data type {dataSrc} is not valid - valid types are {validDataSources}"
+        )
     else:
         return True
 
@@ -15,29 +17,20 @@ def validateDataSrc(dataSrc):
 def getKeyToTableNameMap():
     return {
         "finance": "seng3011-omega-25t1-testing-bucket",
-        "news": "seng3011-omega-news-data"
+        "news": "seng3011-omega-news-data",
     }
 
 
 def getKeyToDataSourceMap():
-    return {
-        "finance": "yahoo_finance",
-        "news": "yahoo_news"
-    }
+    return {"finance": "yahoo_finance", "news": "yahoo_news"}
 
 
 def getKeyToDatasetTypeMap():
-    return {
-        "finance": "Daily stock data",
-        "news": "Financial news"
-    }
+    return {"finance": "Daily stock data", "news": "Financial news"}
 
 
 def getEventType(dataSrc):
-    map = {
-        "finance": "stock-ohl",
-        "news": "stock-news"
-    }
+    map = {"finance": "stock-ohl", "news": "stock-news"}
 
     return map[dataSrc]
 
@@ -45,14 +38,13 @@ def getEventType(dataSrc):
 def getS3FileName(username, dataType, stockname, date):
     fileFormat = {
         "finance": f"{username}#{stockname}_stock_data.csv",
-        "news": f"{username}_{stockname}_{date}_news.csv"
+        "news": f"{username}_{stockname}_{date}_news.csv",
     }
 
     return fileFormat[dataType]
 
 
 def getTableNameFromKey(key: str):
-
     keyToTableNameMap = getKeyToTableNameMap()
     tableName = keyToTableNameMap.get(key, None)
 
@@ -60,7 +52,6 @@ def getTableNameFromKey(key: str):
 
 
 def adageFormatter(s3BucketName: str, stockName: str, content: str, data_type: str):
-
     dataSrc = getKeyToDataSourceMap().get(data_type, None)
     datasetType = getKeyToDatasetTypeMap().get(data_type, None)
 
@@ -81,7 +72,7 @@ def adageFormatter(s3BucketName: str, stockName: str, content: str, data_type: s
 def createDynamoDBAttributeMap(dataSrc, stockname, line):
     attributes = {
         "finance": [("close", "Close")],
-        "news": [("url", "url"), ("sentiment_score", "sentiment_score")]
+        "news": [("url", "url"), ("sentiment_score", "sentiment_score")],
     }
 
     attributeMap = {}
@@ -95,10 +86,7 @@ def createDynamoDBAttributeMap(dataSrc, stockname, line):
 
 # private helper
 def GettingCSVDateColName(dataSrc):
-    keyToDateColumn = {
-        "finance": "Date",
-        "news": "published_at"
-    }
+    keyToDateColumn = {"finance": "Date", "news": "published_at"}
 
     return keyToDateColumn[dataSrc]
 
@@ -108,7 +96,6 @@ def createDynamoDBContentList(dataSrc, stockname, fileContent):
     reader = csv.DictReader(fileContent.split("\n"), delimiter=",")
     contentList = []
     for line in list(reader):
-
         # if we have a blank line (especially at the end of a file)
         if line == "":
             continue
@@ -118,7 +105,9 @@ def createDynamoDBContentList(dataSrc, stockname, fileContent):
         contentList.append(
             {
                 "M": {
-                    "attribute": {"M": createDynamoDBAttributeMap(dataSrc, stockname, line)},
+                    "attribute": {
+                        "M": createDynamoDBAttributeMap(dataSrc, stockname, line)
+                    },
                     "event-type": {"S": f"{(getEventType(dataSrc))}"},
                     "time_object": {
                         "M": {

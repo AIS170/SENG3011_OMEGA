@@ -4,3 +4,4 @@ pytest
 flask
 pytz
 flask-cors
+ruff

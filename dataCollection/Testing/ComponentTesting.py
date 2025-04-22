@@ -5,7 +5,7 @@ import boto3
 from datetime import datetime
 from botocore.exceptions import ClientError
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import src.dataCol as dataCol
 from src.dataCol import (
     CLIENT_BUCKET_NAME1,
@@ -15,16 +15,20 @@ from src.dataCol import (
     CLIENT_ROLE_ARN,
 )
 
+
 def create_s3_client():
-    sts = boto3.client('sts')
-    creds = sts.assume_role(RoleArn=CLIENT_ROLE_ARN, RoleSessionName="AssumeRoleSession1")['Credentials']
+    sts = boto3.client("sts")
+    creds = sts.assume_role(
+        RoleArn=CLIENT_ROLE_ARN, RoleSessionName="AssumeRoleSession1"
+    )["Credentials"]
     return boto3.client(
-        's3',
-        aws_access_key_id=creds['AccessKeyId'],
-        aws_secret_access_key=creds['SecretAccessKey'],
-        aws_session_token=creds['SessionToken'],
-        region_name="ap-southeast-2"
+        "s3",
+        aws_access_key_id=creds["AccessKeyId"],
+        aws_secret_access_key=creds["SecretAccessKey"],
+        aws_session_token=creds["SessionToken"],
+        region_name="ap-southeast-2",
     )
+
 
 @pytest.fixture(scope="session", autouse=True)
 def simulate_registration():
@@ -36,12 +40,13 @@ def simulate_registration():
             Bucket=CLIENT_BUCKET_NAME3,
             Key=profile_key,
             Body=f"User: {username}\nCreated at: {datetime.now().isoformat()}",
-            ContentType="text/plain"
+            ContentType="text/plain",
         )
     except Exception:
         pass
     with open("active_user.txt", "w") as f:
         f.write(username)
+
 
 @pytest.fixture
 def client():
@@ -49,7 +54,9 @@ def client():
     with app.test_client() as client:
         yield client
 
+
 # ------------------ REGISTER ------------------
+
 
 def test_register_success(client):
     s3 = create_s3_client()
@@ -67,50 +74,66 @@ def test_register_success(client):
     else:
         assert "already registered" in data["error"]
 
+
 def test_register_missing_username(client):
     res = client.post("/register", json={})
     assert res.status_code == 400
     assert "Username is required" in res.get_json()["error"]
+
 
 def test_register_duplicate_username(client):
     res = client.post("/register", json={"username": "testuser"})
     assert res.status_code == 409
     assert "already registered" in res.get_json()["error"]
 
+
 def test_register_no_payload(client):
     res = client.post("/register")
     assert res.status_code in [400, 415]
+
 
 def test_register_nonjson_payload(client):
     res = client.post("/register", data="notjson", content_type="text/plain")
     assert res.status_code in [400, 415]
 
+
 # ------------------ HOME ------------------
+
 
 def test_home_route(client):
     res = client.get("/")
     assert res.status_code == 200
     assert "Welcome to the Stock Data API" in res.get_data(as_text=True)
 
+
 # ------------------ STOCK INFO ------------------
+
 
 def test_stock_info_missing_company_param(client):
     res = client.get("/stockInfo")
     assert res.status_code == 400
 
+
 def test_stock_info_invalid_company_name(client):
     res = client.get("/stockInfo?company=zzzzzzzzz")
     assert res.status_code == 404
+
 
 def test_stock_info_stock_data_none(client, monkeypatch):
     monkeypatch.setattr(dataCol, "get_stock_data", lambda *a, **k: (None, None))
     res = client.get("/stockInfo?company=apple")
     assert res.status_code == 404
 
+
 def test_stock_info_exception_handling(client, monkeypatch):
-    monkeypatch.setattr(dataCol, "get_stock_data", lambda *a, **k: (_ for _ in ()).throw(Exception("boom")))
+    monkeypatch.setattr(
+        dataCol,
+        "get_stock_data",
+        lambda *a, **k: (_ for _ in ()).throw(Exception("boom")),
+    )
     res = client.get("/stockInfo?company=apple")
     assert res.status_code == 500
+
 
 def test_stock_info_real_s3(client):
     res = client.get("/stockInfo?company=apple")
@@ -124,7 +147,9 @@ def test_stock_info_real_s3(client):
     assert meta["ResponseMetadata"]["HTTPStatusCode"] == 200
     s3.delete_object(Bucket=CLIENT_BUCKET_NAME1, Key=key)
 
+
 # ------------------ CHECK STOCK ------------------
+
 
 def test_check_stock_exists_route_real_s3(client):
     file_key = "testuser#apple_stock_data.csv"
@@ -136,6 +161,7 @@ def test_check_stock_exists_route_real_s3(client):
     assert res.status_code == 200
     assert res.get_json()["exists"] is True
     s3.delete_object(Bucket=CLIENT_BUCKET_NAME1, Key=file_key)
+
 
 def test_check_stock_not_exists_route_real_s3(client):
     with open("active_user.txt", "w") as f:
@@ -150,18 +176,19 @@ def test_check_stock_not_exists_route_real_s3(client):
     assert res.status_code == 200
     assert res.get_json()["exists"] is False
 
+
 def test_check_stock_missing_params(client):
     res = client.get("/check_stock")
     assert res.status_code == 400
     res = client.get("/check_stock?company=apple")
     assert res.status_code in [200, 404]
 
+
 def test_check_stock_unexpected_s3_error(client, monkeypatch):
     class MockS3:
         def head_object(self, *a, **k):
             raise ClientError({"Error": {"Code": "AccessDenied"}}, "HeadObject")
 
-    
     real_boto3_client = boto3.client
 
     def mock_client(service, *a, **k):
@@ -176,6 +203,7 @@ def test_check_stock_unexpected_s3_error(client, monkeypatch):
 
 
 # ------------------ NEWS ------------------
+
 
 def test_news_getallCompanyNews_route(client):
     s3 = create_s3_client()
@@ -195,6 +223,7 @@ def test_news_getallCompanyNews_route(client):
     s3.delete_object(Bucket=CLIENT_BUCKET_NAME1, Key=key)
     s3.delete_object(Bucket=CLIENT_BUCKET_NAME2, Key=news_key)
 
+
 def test_news_file_uploaded(client):
     s3 = create_s3_client()
     today = datetime.now().strftime("%Y-%m-%d")
@@ -213,6 +242,7 @@ def test_news_file_uploaded(client):
     s3.delete_object(Bucket=CLIENT_BUCKET_NAME2, Key=news_key)
     s3.delete_object(Bucket=CLIENT_BUCKET_NAME1, Key=file_key)
 
+
 def test_news_skips_if_recent_exists(client):
     s3 = create_s3_client()
     today = datetime.now().strftime("%Y-%m-%d")
@@ -228,8 +258,13 @@ def test_news_skips_if_recent_exists(client):
     s3.delete_object(Bucket=CLIENT_BUCKET_NAME1, Key=stock_key)
     s3.delete_object(Bucket=CLIENT_BUCKET_NAME2, Key=news_key)
 
+
 def test_news_handles_exception_gracefully(client, monkeypatch):
-    monkeypatch.setattr(dataCol, "get_latest_news_date_from_s3", lambda *a, **k: (_ for _ in ()).throw(Exception("boom")))
+    monkeypatch.setattr(
+        dataCol,
+        "get_latest_news_date_from_s3",
+        lambda *a, **k: (_ for _ in ()).throw(Exception("boom")),
+    )
     s3 = create_s3_client()
     file_key = "testuser#fakeco_stock_data.csv"
     with open("active_user.txt", "w") as f:
