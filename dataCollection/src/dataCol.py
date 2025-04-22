@@ -1,7 +1,4 @@
 from flask import Flask, jsonify, request
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from flask_cors import CORS
-from gnews import GNews
 import yfinance as yf
 import pandas as pd
 import requests
@@ -11,11 +8,12 @@ import re
 from datetime import datetime, timedelta, timezone
 import io
 from dateutil import parser
-import os
-import nltk
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from flask_cors import CORS
+from gnews import GNews
 import pytz
 
-nltk.download("vader_lexicon")
+
 SYDNEY_TZ = pytz.timezone("Australia/Sydney")
 
 app = Flask(__name__)
@@ -27,20 +25,9 @@ CLIENT_BUCKET_NAME2 = "seng3011-omega-news-data"
 CLIENT_BUCKET_NAME3 = "seng3011-collection-usernames"
 ONE_MONTH_AGO = datetime.now(timezone.utc) - timedelta(days=30)
 TODAY_STR = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-ACTIVE_USER_FILE = "active_user.txt"
 sia = SentimentIntensityAnalyzer()
 
-
-def set_current_user(username):
-    with open(ACTIVE_USER_FILE, "w") as f:
-        f.write(username.strip().lower())
-
-
-def get_current_user():
-    if os.path.exists(ACTIVE_USER_FILE):
-        with open(ACTIVE_USER_FILE, "r") as f:
-            return f.read().strip()
-    return None
+# removed the current user stuff
 
 
 class UserAlreadyExists(Exception):
@@ -49,11 +36,11 @@ class UserAlreadyExists(Exception):
 
 @app.route("/register", methods=["POST"])
 def register_user():
-    data = request.get_json()
-    if not data or "username" not in data:
-        return jsonify({"error": "Username is required."}), 400
+    username = request.args.get("name")
+    if not username:
+        return jsonify({"error": "Username is required as query param `name`."}), 400
 
-    username = data["username"].strip().lower()
+    username = username.strip().lower()
     profile_key = f"{username}/profile.txt"
 
     sts_client = boto3.client("sts")
@@ -79,16 +66,42 @@ def register_user():
                 Body=f"User: {username}\nCreated at: {datetime.now(timezone.utc).isoformat()}",
                 ContentType="text/plain",
             )
-            set_current_user(username)
             return jsonify(
-                {
-                    "message": f"User '{username}' registered and set as current session user."
-                }
+                {"message": f"User '{username}' registered successfully in S3."}
             ), 201
         else:
             return jsonify({"error": f"S3 access error: {str(e)}"}), 500
     except UserAlreadyExists as ue:
         return jsonify({"error": str(ue)}), 409
+
+
+def is_registered_user(username):
+    username = username.strip().lower()
+    profile_key = f"{username}/profile.txt"
+
+    sts_client = boto3.client("sts")
+    assumed_role_object = sts_client.assume_role(
+        RoleArn=CLIENT_ROLE_ARN, RoleSessionName="AssumeRoleSession1"
+    )
+    credentials = assumed_role_object["Credentials"]
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=credentials["AccessKeyId"],
+        aws_secret_access_key=credentials["SecretAccessKey"],
+        aws_session_token=credentials["SessionToken"],
+    )
+
+    try:
+        s3.head_object(Bucket=CLIENT_BUCKET_NAME3, Key=profile_key)
+        return True
+    except ClientError as e:
+        code = e.response["Error"]["Code"]
+        if code == "404":
+            return False
+        elif code == "AccessDenied":
+            # Optional: log or handle this separately
+            raise Exception("S3 access denied during user registration check.")
+        raise e
 
 
 def write_to_client_s3(filename, bucketname):
@@ -120,7 +133,7 @@ def search_ticker(company_name):
             data = response.json()
             for quote in data.get("quotes", []):
                 if quote.get("isYahooFinance") and "symbol" in quote:
-                    return quote["symbol"]
+                    return quote["symbol"].split(".")[0]
         return None
     except Exception:
         return None
@@ -137,7 +150,7 @@ def get_stock_data(stock_ticker, company, name, period="1mo"):
         ]
         hist.reset_index(inplace=True)
         hist["Date"] = hist["Date"].dt.strftime("%Y-%m-%d")
-        file_path = f"{name}#{company}_stock_data.csv"
+        file_path = f"{name.strip().lower()}#{company.strip().lower()}_stock_data.csv"
         hist.to_csv(file_path, index=False)
         write_to_client_s3(file_path, CLIENT_BUCKET_NAME1)
         return file_path, hist.to_dict(orient="records")
@@ -157,12 +170,16 @@ def stock_info():
         company_name = request.args.get("company")
         if not company_name:
             return jsonify({"error": "Please provide a company name."}), 400
-        name = get_current_user()
+        company_name = company_name.strip().lower()
+        name = request.args.get("name")
         if not name:
-            return jsonify(
-                {"error": "No active user found. Please register first."}
-            ), 403
-        stock_ticker = search_ticker(company_name.strip().lower())
+            return jsonify({"error": "Please provide your username as `name`."}), 400
+
+        if not is_registered_user(name):
+            return jsonify({"error": f"User '{name}' is not registered."}), 403
+        name = name.strip().lower()
+
+        stock_ticker = search_ticker(company_name)
         if not stock_ticker:
             return jsonify(
                 {"error": f"Could not find a stock ticker for '{company_name}'."}
@@ -186,39 +203,54 @@ def stock_info():
 
 @app.route("/check_stock")
 def check_stock():
-    company_name = request.args.get("company")
-    name = get_current_user()
-    if not company_name:
-        return jsonify({"error": "Please provide a company name."}), 400
-    if not name:
-        return jsonify({"error": "No active user found. Please register first."}), 403
-    file_path = f"{name}#{company_name.strip().lower()}_stock_data.csv"
-    sts_client = boto3.client("sts")
-    assumed_role_object = sts_client.assume_role(
-        RoleArn=CLIENT_ROLE_ARN, RoleSessionName="AssumeRoleSession1"
-    )
-    credentials = assumed_role_object["Credentials"]
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=credentials["AccessKeyId"],
-        aws_secret_access_key=credentials["SecretAccessKey"],
-        aws_session_token=credentials["SessionToken"],
-    )
     try:
+        company_name = request.args.get("company")
+        name = request.args.get("name")
+
+        if not company_name:
+            return jsonify(
+                {"error": "Please provide a company name as `company`."}
+            ), 400
+        if not name:
+            return jsonify({"error": "Please provide your username as `name`."}), 400
+
+        if not is_registered_user(name):
+            return jsonify({"error": f"User '{name}' is not registered."}), 403
+
+        company_name = company_name.strip().lower()
+        name = name.strip().lower()
+        file_path = f"{name}#{company_name}_stock_data.csv"
+
+        sts_client = boto3.client("sts")
+        assumed_role_object = sts_client.assume_role(
+            RoleArn=CLIENT_ROLE_ARN, RoleSessionName="AssumeRoleSession1"
+        )
+        credentials = assumed_role_object["Credentials"]
+        s3 = boto3.client(
+            "s3",
+            aws_access_key_id=credentials["AccessKeyId"],
+            aws_secret_access_key=credentials["SecretAccessKey"],
+            aws_session_token=credentials["SessionToken"],
+        )
+
         s3.head_object(Bucket=CLIENT_BUCKET_NAME1, Key=file_path)
         return jsonify(
             {"exists": True, "message": "Stock data exists.", "file": file_path}
         )
+
     except ClientError as e:
         if e.response["Error"]["Code"] == "404":
             return jsonify(
                 {"exists": False, "message": "No stock data found.", "file": file_path}
             )
-        return jsonify({"error": f"Error checking S3: {e}"}), 500
+        return jsonify({"error": f"Error checking S3: {str(e)}"}), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 def get_stocks_for_news(username):
-    name = username.strip().lower()
+    name = username
     sts_client = boto3.client("sts")
     assumed_role = sts_client.assume_role(
         RoleArn=CLIENT_ROLE_ARN, RoleSessionName="AssumeRoleSession1"
@@ -354,23 +386,27 @@ def upload_csv_to_s3(username, company_name, df, date_str=None):
 
 @app.route("/news")
 def getallCompanyNews():
-    name = get_current_user()
+    name = request.args.get("name")
     if not name:
-        return jsonify({"error": "No active user found. Please register first."}), 403
+        return jsonify({"error": "Please provide your username as `name`."}), 400
+
+    if not is_registered_user(name):
+        return jsonify({"error": f"User '{name}' is not registered."}), 403
+    name = name.strip().lower()
 
     companies = get_stocks_for_news(name)
     files_added = 0
 
     for company in companies:
         try:
-            latest = get_latest_news_date_from_s3(company, name)
+            latest = get_latest_news_date_from_s3(company.strip().lower(), name)
             if not latest or latest < ONE_MONTH_AGO:
-                df = fetch_company_news_df(company)
+                df = fetch_company_news_df(company.strip().lower())
                 if not df.empty:
-                    upload_csv_to_s3(name, company, df)
+                    upload_csv_to_s3(name, company.strip().lower(), df)
                     files_added += 1
         except Exception as e:
-            print(f"Error with {company}: {e}")
+            print(f"Error with {company.strip().lower()}: {e}")
 
     return jsonify({"status": "complete", "files_added": files_added}), 200
 
