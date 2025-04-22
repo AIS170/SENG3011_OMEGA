@@ -72,7 +72,7 @@ def retrieve(username: str, stockname: str):
                     {
                         "data_source": "yahoo_finance",
                         "dataset_type": "Daily stock data",
-                        "dataset_id": "http://seng3011-omega-25t1-testing-bucket.s3-ap-southeast-2-amazonaws.com",
+                        "dataset_id": "https://seng3011-omega-25t1-testing-bucket.s3-ap-southeast-2-amazonaws.com",
                         "time_object": {
                             "timestamp": f"{str(datetime.now(timezone('Australia/Sydney'))).split('+')[0]}",
                             "timezone": "GMT+11",
@@ -97,7 +97,7 @@ def retrieve(username: str, stockname: str):
                     {
                         "data_source": "yahoo_finance",
                         "dataset_type": "Daily stock data",
-                        "dataset_id": "http://seng3011-omega-25t1-testing-bucket.s3-ap-southeast-2-amazonaws.com",
+                        "dataset_id": "https://seng3011-omega-25t1-testing-bucket.s3-ap-southeast-2-amazonaws.com",
                         "time_object": {
                             "timestamp": f"{str(datetime.now(timezone('Australia/Sydney'))).split('+')[0]}",
                             "timezone": "GMT+11",

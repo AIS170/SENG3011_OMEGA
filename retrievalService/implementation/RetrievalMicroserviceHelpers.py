@@ -64,7 +64,7 @@ def adageFormatter(s3BucketName: str, stockName: str, content: str, data_type: s
     return {
         "data_source": f"{dataSrc}",
         "dataset_type": f"{datasetType}",
-        "dataset_id": f"http://{s3BucketName}.s3-ap-southeast-2-amazonaws.com",
+        "dataset_id": f"https://{s3BucketName}.s3-ap-southeast-2-amazonaws.com",
         "time_object": {
             "timestamp": f"{str(datetime.now(timezone('Australia/Sydney'))).split('+')[0]}",
             "timezone": "GMT+11",
