@@ -25,7 +25,7 @@ from src.dataCol import (
 
 def test_search_ticker_cases():
     # Valid ticker
-    assert search_ticker("apple") == "AAPL"
+    assert search_ticker("Apple") == "AAPL"
 
     # Invalid tickers
     assert search_ticker("nonexistentcompanyxyz") is None
