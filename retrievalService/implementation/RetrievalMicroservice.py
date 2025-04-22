@@ -32,6 +32,11 @@ AWS_S3_BUCKET_NAME = "seng3011-omega-25t1-testing-bucket"
 DYNAMO_DB_NAME = "seng3011-test-dynamodb"
 
 
+@app.route("/", methods=["GET"])
+def home():
+    json.dumps({"Welcome": "This is Omega Financial's retrieval microservice"})
+
+
 @app.route("/v1/register/", methods=["POST"])
 def register():
     username = request.get_json()["username"]
