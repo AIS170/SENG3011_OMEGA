@@ -120,9 +120,13 @@ def search_ticker(company_name):
             # Prefer tickers without region suffixes
             for quote in data.get("quotes", []):
                 symbol = quote.get("symbol", "")
-                if quote.get("isYahooFinance") and symbol and not any(
-                    symbol.endswith(suffix)
-                    for suffix in [".MX", ".NS", ".L", ".V", ".TO", ".AX"]
+                if (
+                    quote.get("isYahooFinance")
+                    and symbol
+                    and not any(
+                        symbol.endswith(suffix)
+                        for suffix in [".MX", ".NS", ".L", ".V", ".TO", ".AX"]
+                    )
                 ):
                     return symbol
             # Fallback: return first match
