@@ -31,7 +31,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Download NLTK VADER lexicon
       run: |
-        python -m nltk.downloader vader_lexicon
+        python3.10 -m nltk.downloader vader_lexicon
 
     - name: 🔐 Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
