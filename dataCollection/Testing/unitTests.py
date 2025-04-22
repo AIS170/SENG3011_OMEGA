@@ -12,7 +12,6 @@ from src.dataCol import (
     write_to_client_s3,
     fetch_company_news_df,
     get_stocks_for_news,
-    get_latest_news_date_from_s3,
     upload_csv_to_s3,
     CLIENT_BUCKET_NAME1,
     CLIENT_BUCKET_NAME2,
@@ -143,7 +142,6 @@ def test_fetch_company_news_df_old_articles():
 def test_fetch_company_news_df_recent_articles():
     from datetime import datetime, timedelta
     import yfinance as yf
-    import pandas as pd
     from src.dataCol import fetch_company_news_df
 
     # Simulate recent news and check if it’s included in the DataFrame
@@ -165,7 +163,7 @@ def test_fetch_company_news_df_recent_articles():
         yf.Ticker = MockTicker
         df_recent = fetch_company_news_df("apple")
         print(f"Recent news check (should include article): {df_recent}")
-        assert not df_recent.empty  # ✅ This should now pass
+        assert not df_recent.empty  # This should now pass
         assert "article_title" in df_recent.columns
         assert df_recent["article_title"].iloc[0] == "Recent News"
     finally:

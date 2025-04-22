@@ -10,7 +10,6 @@ import io
 from dateutil import parser
 import os
 import nltk
-nltk.download('vader_lexicon')
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from flask_cors import CORS
 from gnews import GNews
@@ -180,10 +179,10 @@ def check_stock():
     )
     try:
         s3.head_object(Bucket=CLIENT_BUCKET_NAME1, Key=file_path)
-        return jsonify({"exists": True, "message": f"Stock data exists.", "file": file_path})
+        return jsonify({"exists": True, "message": "Stock data exists.", "file": file_path})
     except ClientError as e:
         if e.response['Error']['Code'] == "404":
-            return jsonify({"exists": False, "message": f"No stock data found.", "file": file_path})
+            return jsonify({"exists": False, "message": "No stock data found.", "file": file_path})
         return jsonify({"error": f"Error checking S3: {e}"}), 500
     
 def get_stocks_for_news(username):
@@ -238,7 +237,7 @@ def get_latest_news_date_from_s3(company_name, username):
                     file_date = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
                     if latest_date is None or file_date > latest_date:
                         latest_date = file_date
-                except:
+                except Exception:
                     continue
     return latest_date
 
@@ -272,9 +271,9 @@ def fetch_company_news_df(company_name):
                     "published_at": pub_time.isoformat(),
                     "sentiment_score": sentiment
                 })
-            except:
+            except Exception:
                 continue
-    except:
+    except Exception:
         pass
     return pd.DataFrame(records)
 
@@ -374,4 +373,5 @@ def get_sports_news():
         }), 500
         
 if __name__ == "__main__":
+    nltk.download('vader_lexicon')
     app.run(host='0.0.0.0', port=5001)

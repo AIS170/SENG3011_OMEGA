@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 import pytest
 import boto3
 from datetime import datetime
@@ -39,7 +38,7 @@ def simulate_registration():
             Body=f"User: {username}\nCreated at: {datetime.now().isoformat()}",
             ContentType="text/plain"
         )
-    except:
+    except Exception:
         pass
     with open("active_user.txt", "w") as f:
         f.write(username)
@@ -58,7 +57,7 @@ def test_register_success(client):
     profile_key = f"{username}/profile.txt"
     try:
         s3.delete_object(Bucket=CLIENT_BUCKET_NAME3, Key=profile_key)
-    except:
+    except Exception:
         pass
     res = client.post("/register", json={"username": username})
     assert res.status_code in [201, 409]
@@ -145,7 +144,7 @@ def test_check_stock_not_exists_route_real_s3(client):
     s3 = create_s3_client()
     try:
         s3.delete_object(Bucket=CLIENT_BUCKET_NAME1, Key=key)
-    except:
+    except Exception:
         pass
     res = client.get("/check_stock?company=nonexistent")
     assert res.status_code == 200
@@ -188,7 +187,7 @@ def test_news_getallCompanyNews_route(client):
     s3.put_object(Bucket=CLIENT_BUCKET_NAME1, Key=key, Body="test,data\n1,2")
     try:
         s3.delete_object(Bucket=CLIENT_BUCKET_NAME2, Key=news_key)
-    except:
+    except Exception:
         pass
     res = client.get("/news")
     assert res.status_code == 200
@@ -206,7 +205,7 @@ def test_news_file_uploaded(client):
     s3.put_object(Bucket=CLIENT_BUCKET_NAME1, Key=file_key, Body="dummy,data\n1,2")
     try:
         s3.delete_object(Bucket=CLIENT_BUCKET_NAME2, Key=news_key)
-    except:
+    except Exception:
         pass
     res = client.get("/news")
     assert res.status_code == 200
