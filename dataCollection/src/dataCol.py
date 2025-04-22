@@ -117,11 +117,21 @@ def search_ticker(company_name):
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             data = response.json()
+            # Prefer tickers without region suffixes
+            for quote in data.get("quotes", []):
+                symbol = quote.get("symbol", "")
+                if quote.get("isYahooFinance") and symbol and not any(
+                    symbol.endswith(suffix)
+                    for suffix in [".MX", ".NS", ".L", ".V", ".TO", ".AX"]
+                ):
+                    return symbol
+            # Fallback: return first match
             for quote in data.get("quotes", []):
                 if quote.get("isYahooFinance") and "symbol" in quote:
                     return quote["symbol"]
         return None
-    except Exception:
+    except Exception as e:
+        print(f"Error in search_ticker: {e}")
         return None
 
 
