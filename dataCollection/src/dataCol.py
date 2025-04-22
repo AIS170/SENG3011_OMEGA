@@ -131,20 +131,11 @@ def search_ticker(company_name):
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             data = response.json()
-            quotes = data.get("quotes", [])
-
-            # Prefer US listings if available (no suffix)
-            for quote in quotes:
-                symbol = quote.get("symbol", "")
-                if quote.get("isYahooFinance") and "." not in symbol:
-                    return symbol  # US listing like 'AAPL'
-
-            # If not found, allow international listings with suffix
-            for quote in quotes:
-                symbol = quote.get("symbol", "")
-                if quote.get("isYahooFinance"):
-                    return symbol  # Like '005930.KS' or 'RELIANCE.NS'
-
+            for quote in data.get("quotes", []):
+                if quote.get("isYahooFinance") and "symbol" in quote:
+                    symbol = quote["symbol"]
+                    # Strip .MX only, keep all other suffixes (e.g. .KS, .NS, etc.)
+                    return symbol.split(".")[0] if symbol.endswith(".MX") else symbol
         return None
     except Exception:
         return None
