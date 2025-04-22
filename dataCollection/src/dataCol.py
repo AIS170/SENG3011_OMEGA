@@ -133,7 +133,9 @@ def search_ticker(company_name):
             data = response.json()
             for quote in data.get("quotes", []):
                 if quote.get("isYahooFinance") and "symbol" in quote:
-                    return quote["symbol"].split(".")[0]
+                    symbol = quote["symbol"]
+                    # Strip .MX only, keep all other suffixes (e.g. .KS, .NS, etc.)
+                    return symbol.split(".")[0] if symbol.endswith(".MX") else symbol
         return None
     except Exception:
         return None
