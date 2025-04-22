@@ -132,7 +132,7 @@ def search_ticker(company_name):
         if response.status_code == 200:
             data = response.json()
             quotes = data.get("quotes", [])
-            
+
             # Prefer US listings if available (no suffix)
             for quote in quotes:
                 symbol = quote.get("symbol", "")
