@@ -18,31 +18,24 @@ def getKeyToTableNameMap():
     return {
         "finance": "seng3011-omega-25t1-testing-bucket",
         "news": "seng3011-omega-news-data",
-        "sport": "seng3011-omega-sports-data"
+        "sport": "seng3011-omega-sports-data",
     }
 
 
 def getKeyToDataSourceMap():
-    return {
-        "finance": "yahoo_finance",
-        "news": "yahoo_news",
-        "sport": "yahoo_sport"
-    }
+    return {"finance": "yahoo_finance", "news": "yahoo_news", "sport": "yahoo_sport"}
 
 
 def getKeyToDatasetTypeMap():
     return {
         "finance": "Daily stock data",
         "news": "Financial news",
-        "sport": "Sports news"
+        "sport": "Sports news",
     }
 
 
 def getEventType(dataSrc):
-    map = {
-        "finance": "stock-ohlc",
-        "news": "stock-news"
-    }
+    map = {"finance": "stock-ohlc", "news": "stock-news"}
 
     return map[dataSrc]
 
@@ -51,7 +44,7 @@ def getS3FileName(username, dataType, stockname, date):
     fileFormat = {
         "finance": f"{username}#{stockname}_stock_data.csv",
         "news": f"{username}_{stockname}_{date}_news.csv",
-        "sport": f"{username}#{stockname}_{date}_sport.csv"         # TODO GET THIS CHECKED WITH RAKSHIL
+        "sport": f"{username}#{stockname}_{date}_sport.csv",  # TODO GET THIS CHECKED WITH RAKSHIL
     }
 
     return fileFormat[dataType]
@@ -86,7 +79,7 @@ def createDynamoDBAttributeMap(dataSrc, stockname, line):
     attributes = {
         "finance": [("close", "Close")],
         "news": [("url", "url"), ("sentiment_score", "sentiment_score")],
-        "sport": None       # TODO: Figure this out using an example csv file from Rakshil
+        "sport": None,  # TODO: Figure this out using an example csv file from Rakshil
     }
 
     attributeMap = {}
@@ -103,7 +96,7 @@ def GettingCSVDateColName(dataSrc):
     keyToDateColumn = {
         "finance": "Date",
         "news": "published_at",
-        "sport": None           # TODO: Figure this out using an example csv file from
+        "sport": None,  # TODO: Figure this out using an example csv file from
     }
     keyToDateColumn = {"finance": "Date", "news": "published_at"}
 
