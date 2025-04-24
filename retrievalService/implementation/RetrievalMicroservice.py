@@ -34,7 +34,7 @@ DYNAMO_DB_NAME = "seng3011-test-dynamodb"
 
 @app.route("/", methods=["GET"])
 def home():
-    json.dumps({"Welcome": "This is Omega Financial's retrieval microservice"})
+    return json.dumps({"Welcome": "This is Omega Financial's retrieval microservice"})
 
 
 @app.route("/v1/register/", methods=["POST"])
